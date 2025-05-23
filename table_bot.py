@@ -132,6 +132,66 @@ async def update_table(
     else:
         await interaction.response.send_message(f"❌ No entry found for `{name}`")
 
+
+@tree.command(name="sort_table", description="Sort table by column")
+@app_commands.describe(
+    column="Which column to sort by",
+    descending="Sort in descending order (default: false)"
+)
+async def sort_table(
+    interaction: discord.Interaction,
+    column: str,
+    descending: bool = False
+):
+    valid_columns = ["name", "sing", "dance", "rally"]
+    column = column.lower()
+
+    if column not in valid_columns:
+        await interaction.response.send_message(f"❌ Invalid column. Use one of: name, sing, dance, rally")
+        return
+
+    data = load_data()
+
+    def get_sort_key(row):
+        val = row.get(column)
+        return val if val is not None else -999999 if isinstance(val,(int, float)) else ""
+    
+    sorted_data = sorted(data, key=get_sort_key, reverse=descending)
+
+    NAME_WIDTH  = 15
+    SING_WIDTH  = 7
+    DANCE_WIDTH = 7
+    RALLY_WIDTH = 7
+
+    header = (
+        f"{'Name':<{NAME_WIDTH}} | "
+        f"{'Sing[k]':<{SING_WIDTH}} | "
+        f"{'Dance[k]':<{DANCE_WIDTH}} | "
+        f"{'Rally[Mio]':<{RALLY_WIDTH}}"
+    )
+    separator = "-" * len(header)
+
+    rows = []
+    for d in sorted_data:
+        name_col = f"{d['name']:<{NAME_WIDTH}}"
+        sing_col = f"{d['sing'] or 0:<{SING_WIDTH}}"
+        dance_col = f"{d['dance'] or 0:<{DANCE_WIDTH}}"
+        rally_col = f"{d['rally'] or 0:<{RALLY_WIDTH}}"
+        rows.append(f"{name_col} | {sing_col} | {dance_col} | {rally_col}")
+
+    table_text = "\n".join([header, separator] + rows)
+
+    if len(table_text) <= 1990:
+        await interaction.response.send_message(f"```{table_text}```")
+    else:
+        tmp = "sorted_table.txt"
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.write(table_text)
+        await interaction.response.send_message(
+            content="Sorted table is too large to show directly, here’s a file:",
+            file=discord.File(tmp)
+        )
+
 # ————————————————
 # Start webserver and bot
 Thread(target=run_webserver, daemon=True).start()
