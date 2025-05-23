@@ -32,12 +32,12 @@ def load_data():
     res = supabase.table("stats").select("*").execute()
     return res.data
 
-def update_row(name, sing, dance, rally):
-    supabase.table("stats").update({
-        "sing": sing,
-        "dance": dance,
-        "rally": rally
-    }).eq("name", name).execute()
+
+def update_row(name, **kwargs):
+    # Remove keys with None values
+    update_data = {k: v for k, v in kwargs.items() if v is not None}
+    if update_data:
+        supabase.table("stats").update(update_data).eq("name", name).execute()
 
 # ————————————————
 # Flask Keep-Alive Webserver
@@ -45,6 +45,7 @@ app = Flask("")
 @app.route("/")
 def home():
     return "BOT is alive"
+
 
 def run_webserver():
     port = int(os.environ.get("PORT", 3000))
@@ -82,9 +83,9 @@ async def show_table(interaction: discord.Interaction):
     rows = []
     for d in data:
         name_col = f"{d['name']:<{NAME_WIDTH}}"
-        sing_col = f"{d['sing']:<{SING_WIDTH}}"
-        dance_col = f"{d['dance']:<{DANCE_WIDTH}}"
-        rally_col = f"{d['rally']:<{RALLY_WIDTH}}"
+        sing_col = f"{d['sing'] or 0:<{SING_WIDTH}}"
+        dance_col = f"{d['dance'] or 0:<{DANCE_WIDTH}}"
+        rally_col = f"{d['rally'] or 0:<{RALLY_WIDTH}}"
         rows.append(f"{name_col} | {sing_col} | {dance_col} | {rally_col}")
 
     table_text = "\n".join([header, separator] + rows)
@@ -103,15 +104,15 @@ async def show_table(interaction: discord.Interaction):
 @tree.command(name="update_table", description="Update table data")
 @app_commands.describe(
     name="The name of the person to update",
-    sing="New value for sing (required)",
-    dance="New value for dance (required)",
+    sing="New value for sing (optional)",
+    dance="New value for dance (optional)",
     rally="New value for rally (optional)"
 )
 async def update_table(
     interaction: discord.Interaction,
     name: str,
-    sing: int,
-    dance: int,
+    sing: int = None,
+    dance: int = None,
     rally: float = None
 ):
     data = load_data()
@@ -119,13 +120,14 @@ async def update_table(
 
     for row in data:
         if row["name"].lower() == name.lower():
-            update_row(name, sing, dance, rally if rally is not None else row['rally'])
+            update_row(name, sing=sing, dance=dance, rally=rally)
             found = True
             break
 
     if found:
         await interaction.response.send_message(
-            f"✅ Updated `{name}` with values: sing={sing}, dance={dance}, rally={rally}"
+            f"✅ Updated `{name}` with: " +
+            ", ".join([f"{k}={v}" for k, v in [("sing", sing), ("dance", dance), ("rally", rally)] if v is not None])
         )
     else:
         await interaction.response.send_message(f"❌ No entry found for `{name}`")
