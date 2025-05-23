@@ -9,7 +9,13 @@ import json
 
 # ————————————————
 # Bot Token from Replit Secret
-TOKEN = 'MTM3NDMzNjA2MjUxMTM4NjcxNQ.GHIzw5.XL_uH__sFljARkoChn3Vtf-zhiTmVEw_-JvXSc'
+raw_token = os.getenv("DIS_TOKEN")
+if not raw_token:
+    print("❌ ERROR: DIS_TOKEN env var not found or empty!")
+    exit(1)
+TOKEN = raw_token.strip()
+print(f"✅ Loaded token (length {len(TOKEN)})")
+
 DATA_FILE = 'stats.json'
 
 # Create default data file if it doesn't exist
