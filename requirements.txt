@@ -1,2 +1,5 @@
+# requirements.txt
 discord.py
 flask
+supabase
+threading
