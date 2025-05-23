@@ -1,0 +1,356 @@
+[
+    {
+        "name": "captain",
+        "sing": 429,
+        "dance": 313,
+        "rally": 11.0
+    },
+    {
+        "name": "james",
+        "sing": 243,
+        "dance": 222,
+        "rally": 9.56
+    },
+    {
+        "name": "athena",
+        "sing": 242,
+        "dance": 206,
+        "rally": 11.0
+    },
+    {
+        "name": "pio",
+        "sing": 257,
+        "dance": 218,
+        "rally": 9.56
+    },
+    {
+        "name": "eiva",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "gurrion",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "lilwest",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "drStrange",
+        "sing": 227,
+        "dance": 202,
+        "rally": 9.56
+    },
+    {
+        "name": "jazelhas",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "traminator",
+        "sing": 140,
+        "dance": 135,
+        "rally": 8.16
+    },
+    {
+        "name": "superman",
+        "sing": 197,
+        "dance": 163,
+        "rally": 8.16
+    },
+    {
+        "name": "mikha",
+        "sing": 182,
+        "dance": 146,
+        "rally": 8.16
+    },
+    {
+        "name": "leonidas",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "mi5",
+        "sing": 157,
+        "dance": 135,
+        "rally": 0
+    },
+    {
+        "name": "lofu",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "jons",
+        "sing": 130,
+        "dance": 136,
+        "rally": 8.16
+    },
+    {
+        "name": "ganda",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "jupiter",
+        "sing": 153,
+        "dance": 138,
+        "rally": 8.16
+    },
+    {
+        "name": "mrCool",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "johnWick",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "lien",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "expe",
+        "sing": 157,
+        "dance": 122,
+        "rally": 6.96
+    },
+    {
+        "name": "sam78",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "pionty",
+        "sing": 142,
+        "dance": 120,
+        "rally": 6.96
+    },
+    {
+        "name": "saitama",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "alol",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "vietnam",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "bruceWayne",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "mrKool",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "piano",
+        "sing": 167,
+        "dance": 137,
+        "rally": 8.16
+    },
+    {
+        "name": "ladreannis",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "nina",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "byeol",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "ara",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "sanyana",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "stella",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "larry",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "markMondra",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "hellriser",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "jackal",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "elnico",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "l15",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "pat050",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "filo",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "minny",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "alaja",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "davidlv",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "c2p0",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "garantio",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "wj3adw",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "vuivekhongquau",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "jnp",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "drots",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "0815",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "bude",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "razzo",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "firefly",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "mocca",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    },
+    {
+        "name": "gaunguwupr",
+        "sing": 0,
+        "dance": 0,
+        "rally": 0
+    }
+]
