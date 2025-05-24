@@ -1,4 +1,4 @@
 # requirements.txt
-discord.py
-flask
-supabase
+discord.py==2.5.2
+Flask==3.1.1
+supabase==2.15.1
