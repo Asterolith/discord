@@ -1,9 +1,10 @@
 import os
+import threading
 import discord
 from discord.ext import commands
 from discord import app_commands
 from flask import Flask
-from threading import Thread
+
 from py.helpers import *
 from py.paginator import TablePaginator
 
@@ -17,15 +18,15 @@ TOKEN = TOKEN.strip()
 print(f"✅ Loaded Discord token (length {len(TOKEN)})")
 
 # ————————————————————————————————
-# Flask Webserver (Gunicorn-compatible)
+# Flask App for Gunicorn
 app = Flask(__name__)
 
 @app.route("/")
 def home():
     return "BOT is alive"
 
-def run_webserver():
-    app.run(host="0.0.0.0", port=3000)
+# def run_webserver():
+#     app.run(host="0.0.0.0", port=3000)
 
 # ————————————————————————————————
 # Discord Bot Setup
@@ -57,16 +58,19 @@ async def show_table(
 
     # Get only the needed rows
     page_data = load_page(sort_by, sort_desc, page)
+    if not page_data:
+        return await interaction.response.send_message("❌ Page out of range")
 
     # Render lines
     lines = [HEADER, SEP]
     for row in page_data:
         lines.append(format_row(row))
         lines.append(blank_row())
-
     block = f"```css\n{chr(10).join(lines)}\n```"
-    all_data = load_data()  # Needed for paginator logic
-    view = TablePaginator(all_data, sort_by, sort_desc, page)
+
+    # Paginator buttons (needs full count)
+    total = len(load_data())
+    view = TablePaginator(total, sort_by, sort_desc, page)
 
     await interaction.response.send_message(content=block, view=view)
 
@@ -96,4 +100,8 @@ async def update_table(
 # ————————————————
 # Bot Run (Gunicorn runs Flask externally)
 # Thread(target=run_webserver, daemon=True).start() #_NOT for production
-bot.run(TOKEN)
+# Start Discord Bot in Background Thread
+def start_bot():
+    bot.run(TOKEN)
+
+threading.Thread(target=start_bot, daemon=True).start()
