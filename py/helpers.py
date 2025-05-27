@@ -28,14 +28,14 @@ def load_data():
 
 
 def load_page(sort_by: str = None, sort_desc: bool = False, page: int = 1):
-    '''Fetch only rows that need from Suppabase DB, already sorted & paged.'''
+    """Fetch only the rows you need from Supabase, already sorted & paged."""
     start = (page - 1) * ROWS_PER_PAGE
-    end = start + ROWS_PER_PAGE - 1
-    query = supabase.table("stats").select("*")
+    end   = start + ROWS_PER_PAGE - 1
 
+    query = supabase.table("stats").select("*")
     if sort_by:
-        # Supabase order() wants an options dict, not ascending=
-        query = query.order(sort_by, { "ascending": not sort_desc })
+        # Pass ascending as a keyword argument, not a dict or positional arg
+        query = query.order(sort_by, ascending=not sort_desc)
 
     return query.range(start, end).execute().data or []
 
