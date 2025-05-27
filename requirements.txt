@@ -1,5 +1,7 @@
+
 # requirements.txt
-discord.py
-Flask
-supabase
+idna
 gunicorn
+discord.py
+supabase-py
+flask

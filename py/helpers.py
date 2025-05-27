@@ -28,16 +28,16 @@ def load_data():
 
 
 def load_page(sort_by: str = None, sort_desc: bool = False, page: int = 1):
-    """Fetch only the rows you need from Supabase, already sorted & paged."""
-    start = (page - 1) * ROWS_PER_PAGE
-    end   = start + ROWS_PER_PAGE - 1
-
-    query = supabase.table("stats").select("*")
+    """
+    Fetch the full list, optionally sort in Python, then slice out a single page.
+    This avoids unsupported .order() calls in the Supabase client.
+    """
+    all_rows = load_data()          # Pull everything (you can limit columns in real use)
     if sort_by:
-        # pass the ascending boolean as the 2nd positional argument
-        query = query.order(sort_by, not sort_desc)
+        all_rows = sort_data(all_rows, sort_by, sort_desc)
 
-    return query.range(start, end).execute().data or []
+    start = (page - 1) * ROWS_PER_PAGE
+    return all_rows[start : start + ROWS_PER_PAGE]
 
 
 def update_row(name, **kwargs):
