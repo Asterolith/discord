@@ -5,6 +5,7 @@ from discord import app_commands
 from flask import Flask
 from threading import Thread
 from supabase import create_client, Client
+from tablePaginator import TablePaginator
 
 # ————————————————————————————————
 # Constants for Table Formatting
@@ -123,37 +124,19 @@ async def show_table(
 ):
     data = load_data()
 
-    #_Optional sorting
-    if sort_by:
-        col = sort_by.lower()
-        if col in ["name", "sing", "dance", "rally"]:
-            data = sort_data(data, col, sort_desc)
-        else:
-            return await interaction.response.send_message(
-                "❌ Invalid sort_by. Use: name, sing, dance, or rally"
-            )
-
-
-    #_Pagination: x rows per page
-    start = (page - 1) * ROWS_PER_PAGE
-    page_data = data[start:start + ROWS_PER_PAGE]
-    if not page_data:
-        return await interaction.response.send_message("❌ That page is empty.")
-
-    #_Build table lines
-    header = format_header()
-    lines = [header, '-' * len(header)]
-    for row in page_data:
+    #_ sorting & pagination logic to pick `page_data` 
+    lines = [format_header(), '-' * len(format_header())]
+    for row in data:
         lines.append(format_row(row))
         lines.append("") #_blank line for reading ease
-
-    table_text = "\n".join(lines)
-    #_css highlighting
-    table_text = table_text.replace("```", "```py")
-    await interaction.response.send_message(f"```{table_text}```")
-
-    # CSS highlighting for monospace readability
-    # await interaction.response.send_message(f"```css\n{table_text}\n```")
+    
+    block = "```css\n" + "\n".join(lines) + "\n```"
+    # table_text = table_text.replace("```", "```py")
+    # await interaction.response.send_message(f"```{table_text}```")
+    
+    #_create paginator
+    paginator = TablePaginator(data, sort_by, sort_desc, page)
+    await interaction.response.send_message(content=block, view=paginator)
 
 
     # if len(table_text) <= 1990:
