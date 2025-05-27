@@ -68,21 +68,24 @@ async def show_table(
     if sort_by and sort_by.lower() not in ['name', 'sing', 'dance', 'rally']:
         return await interaction.response.send_message("❌ Invalid sort column")
 
-    # Get only the needed rows
+    # Fetch just the rows needed for this page:
     page_data = load_page(sort_by, sort_desc, page)
     if not page_data:
         return await interaction.response.send_message("❌ Page out of range")
 
-    # Render lines
+    # Build the text block:
     lines = [HEADER, SEP]
     for row in page_data:
         lines.append(format_row(row))
         lines.append(blank_row())
     block = f"```css\n{chr(10).join(lines)}\n```"
 
-    # Paginator buttons (needs full count)
-    total = len(load_data())
-    view = TablePaginator(total, sort_by, sort_desc, page)
+    # Instead of passing an int, load the full data list:
+    full_data = load_data()
+    total = len(full_data)
+
+    # Now pass the list into the paginator (so it can do len(data) and slicing):
+    view = TablePaginator(full_data, sort_by, sort_desc, page)
 
     await interaction.response.send_message(content=block, view=view)
 
@@ -113,6 +116,6 @@ async def update_table(
 
 def start_bot():
     bot.run(TOKEN)
-    
+
 # Start Discord in a background thread; Flask (Gunicorn) will serve the HTTP side.
 threading.Thread(target=start_bot, daemon=True).start()
