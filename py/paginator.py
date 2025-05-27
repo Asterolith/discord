@@ -1,7 +1,7 @@
 # Paginator View
 import discord
 from discord import ui
-from helpers import format_header, format_row, sort_data, ROWS_PER_PAGE
+from py.helpers import format_header, format_row, sort_data, ROWS_PER_PAGE
 
 class TablePaginator(ui.View):
     def __init__(self, data, sort_by: str, sort_desc: bool, page: int):
