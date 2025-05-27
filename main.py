@@ -1,12 +1,13 @@
 import os
 import threading
 import discord
-from discord.ext import commands
 from discord import app_commands
-from flask import Flask
+from discord.ext import commands
+from flask import Flask, request
 
 from py.helpers import *
 from py.paginator import TablePaginator
+
 
 
 # ————————————————————————————————
@@ -18,15 +19,26 @@ TOKEN = TOKEN.strip()
 print(f"✅ Loaded Discord token (length {len(TOKEN)})")
 
 # ————————————————————————————————
-# Flask App for Gunicorn
+# Create Flask
 app = Flask(__name__)
 
-@app.route("/")
-def home():
-    return "BOT is alive"
+# Wrap Flask’s WSGI app so that any request without a Host header
+# gets “localhost” as a fallback. This prevents Werkzeug from doing
+# `None.encode("idna")`.
+_original_wsgi = app.wsgi_app
+def _wsgi_with_default_host(environ, start_response):
+    if not environ.get("HTTP_HOST"):
+        # If Render’s health checker didn’t set a Host, give it “localhost”.
+        environ["HTTP_HOST"] = "localhost"
+    return _original_wsgi(environ, start_response)
 
-# def run_webserver():
-#     app.run(host="0.0.0.0", port=3000)
+app.wsgi_app = _wsgi_with_default_host
+# —————————————
+# Your “/” route (or /health)
+@app.route("/", methods=["GET", "HEAD"])
+def home():
+    return "BOT is alive", 200
+
 
 # ————————————————————————————————
 # Discord Bot Setup
@@ -98,10 +110,9 @@ async def update_table(
     await interaction.response.send_message(f"❌ No entry found for `{name}`")
 
 # ————————————————
-# Bot Run (Gunicorn runs Flask externally)
-# Thread(target=run_webserver, daemon=True).start() #_NOT for production
-# Start Discord Bot in Background Thread
+
 def start_bot():
     bot.run(TOKEN)
-
+    
+# Start Discord in a background thread; Flask (Gunicorn) will serve the HTTP side.
 threading.Thread(target=start_bot, daemon=True).start()
