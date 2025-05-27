@@ -19,26 +19,36 @@ TOKEN = TOKEN.strip()
 print(f"✅ Loaded Discord token (length {len(TOKEN)})")
 
 # ————————————————————————————————
-# Create Flask
 app = Flask(__name__)
 
-# Wrap Flask’s WSGI app so that any request without a Host header
-# gets “localhost” as a fallback. This prevents Werkzeug from doing
-# `None.encode("idna")`.
+# Keep a reference to the original WSGI app
 _original_wsgi = app.wsgi_app
+
 def _wsgi_with_default_host(environ, start_response):
+    # 1) If Render’s health-check (or any client) omits HTTP_HOST, give it “localhost”.
     if not environ.get("HTTP_HOST"):
-        # If Render’s health checker didn’t set a Host, give it “localhost”.
         environ["HTTP_HOST"] = "localhost"
+
+    # 2) Also explicitly set SERVER_NAME (so Werkzeug.bind won't see None)
+    #    Use just the “hostname” part (strip any port) as SERVER_NAME.
+    host_header = environ["HTTP_HOST"]
+    hostname = host_header.split(":", 1)[0]
+    environ["SERVER_NAME"] = hostname
+
+    # 3) If SERVER_PORT isn’t set, default it to “80” (or you could set to “443” if using HTTPS).
+    if not environ.get("SERVER_PORT"):
+        environ["SERVER_PORT"] = "443"
+
+    # Now call the real Flask app
     return _original_wsgi(environ, start_response)
 
+# Monkey-patch Flask’s wsgi_app to use our wrapper
 app.wsgi_app = _wsgi_with_default_host
-# —————————————
-# Your “/” route (or /health)
+
+
 @app.route("/", methods=["GET", "HEAD"])
 def home():
     return "BOT is alive", 200
-
 
 # ————————————————————————————————
 # Discord Bot Setup
