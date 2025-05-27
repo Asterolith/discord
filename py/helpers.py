@@ -34,8 +34,8 @@ def load_page(sort_by: str = None, sort_desc: bool = False, page: int = 1):
     query = supabase.table("stats").select("*")
 
     if sort_by:
-        # ascending must be passed as a keyword
-        query = query.order(sort_by, ascending=not sort_desc)
+        # Supabase order() wants an options dict, not ascending=
+        query = query.order(sort_by, { "ascending": not sort_desc })
 
     return query.range(start, end).execute().data or []
 
