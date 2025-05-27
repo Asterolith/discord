@@ -1,4 +1,5 @@
 # requirements.txt
-discord.py==2.5.2
-Flask==3.1.1
-supabase==2.15.1
+discord.py
+Flask
+supabase
+gunicorn
