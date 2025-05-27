@@ -34,8 +34,8 @@ def load_page(sort_by: str = None, sort_desc: bool = False, page: int = 1):
     query = supabase.table("stats").select("*")
 
     if sort_by:
-        #_Superbase ordering expected (ascending: bool)
-        query = query.order(sort_by, {"ascending": not sort_desc})
+        # 1st arg: column, 2nd arg: ascending=True/False
+        query = query.order(sort_by, not sort_desc)
 
     return query.range(start, end).execute().data or []
 
