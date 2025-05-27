@@ -4,8 +4,8 @@ from discord.ext import commands
 from discord import app_commands
 from flask import Flask
 from threading import Thread
-from helpers import *
-from paginator import TablePaginator
+from py.helpers import *
+from py.paginator import TablePaginator
 
 
 # ————————————————————————————————
