@@ -50,8 +50,8 @@ def update_row(name, **kwargs):
 def format_header():
     return (
         f"{'Name':<{NAME_WIDTH}} | "
-        f"{'Sing[k]':<{SING_WIDTH}} | "
-        f"{'Dance[k]':<{DANCE_WIDTH}} | "
+        f"{'Sing[k]':<{SING_WIDTH}}|"
+        f"{'Dance[k]':<{DANCE_WIDTH}}| "
         f"{'Rally[Mio]':<{RALLY_WIDTH}}"
     )
 
@@ -63,8 +63,8 @@ def format_row(d):
     rally = d.get('rally') or 0
     return (
         f"{name:<{NAME_WIDTH}} | "
-        f"{sing:<{SING_WIDTH}} | "
-        f"{dance:<{DANCE_WIDTH}} | "
+        f"{sing:<{SING_WIDTH}}| "
+        f"{dance:<{DANCE_WIDTH}}| "
         f"{rally:<{RALLY_WIDTH}}"
     )
 
@@ -72,8 +72,8 @@ def format_row(d):
 def blank_row():
     return (
         f"{'':<{NAME_WIDTH}} | "
-        f"{'':<{SING_WIDTH}} | "
-        f"{'':<{DANCE_WIDTH}} | "
+        f"{'':<{SING_WIDTH}}| "
+        f"{'':<{DANCE_WIDTH}}| "
         f"{'':<{RALLY_WIDTH}}"
     )
 
