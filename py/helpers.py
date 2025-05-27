@@ -1,5 +1,6 @@
 # Helper Functions
 import os
+import time
 from supabase import create_client, Client
 
 
@@ -22,9 +23,22 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 # Data I/O
-def load_data():
+# Simple in-memory cache
+_cache = {"data": None, "timestamp": 0}
+CACHE_TTL = 60  # seconds
+
+def load_data(use_cache=True):
+    now = time.time()
+    if use_cache and _cache["data"] and now - _cache["timestamp"] < CACHE_TTL:
+        return _cache["data"]
+
     res = supabase.table("stats").select("*").execute()
-    return res.data or []
+    _cache["data"] = res.data or []
+    _cache["timestamp"] = now
+    return _cache["data"]
+
+def invalidate_cache():
+    _cache["timestamp"] = 0
 
 
 def load_page(sort_by: str = None, sort_desc: bool = False, page: int = 1):

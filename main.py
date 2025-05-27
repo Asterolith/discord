@@ -19,12 +19,15 @@ TOKEN = TOKEN.strip()
 print(f"✅ Loaded Discord token (length {len(TOKEN)})")
 
 # ————————————————————————————————
+def is_admin(user: discord.User) -> bool:
+    return user.id in {762749123770056746, 1330770994138447892}  # replace with your admin IDs
+
+# ————————————————————————————————
 app = Flask(__name__)
 
 @app.route("/", methods=["GET", "HEAD"])
 def home():
     return "BOT is alive", 200
-
 
 # ————————————————————————————————
 # Discord Bot Setup
@@ -37,7 +40,7 @@ async def on_ready():
     await tree.sync()
     print(f"✅ Logged in as {bot.user.name} ({bot.user.id})")
 
-# ————————————————
+# ————————————————————————————————
 # Slash Commands
 @tree.command(name="show_table", description="Display table data with optional sorting & pagination")
 @app_commands.describe(
@@ -99,8 +102,31 @@ async def update_table(
             )
     await interaction.response.send_message(f"❌ No entry found for `{name}`")
 
-# ————————————————
 
+@tree.command(name="add_row", description="Add a new row (admin only)")
+async def add_row(interaction: discord.Interaction, name: str, sing: int, dance: int, rally: float):
+    if not is_admin(interaction.user):
+        return await interaction.response.send_message("❌ You are not authorized.")
+
+    supabase.table("stats").insert({
+        "name": name, "sing": sing, "dance": dance, "rally": rally
+    }).execute()
+
+    invalidate_cache()
+    await interaction.response.send_message(f"✅ Row for `{name}` added.")
+
+
+@tree.command(name="delete_row", description="Delete a row (admin only)")
+async def delete_row(interaction: discord.Interaction, name: str):
+    if not is_admin(interaction.user):
+        return await interaction.response.send_message("❌ You are not authorized.")
+
+    supabase.table("stats").delete().eq("name", name).execute()
+    invalidate_cache()
+    await interaction.response.send_message(f"🗑️ Row for `{name}` deleted.")
+
+
+# ————————————————————————————————
 def start_bot():
     bot.run(TOKEN)
 
