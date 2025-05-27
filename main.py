@@ -1,10 +1,9 @@
 #_main.py
-import os
-import threading
-import discord
+import os, threading, discord
+from flask import request
+from supabase import create_client
 from discord import app_commands
 from discord.ext import commands
-from flask import Flask, request
 
 from py.helpers import *
 from py.paginator import TablePaginator
@@ -24,11 +23,30 @@ def is_admin(user: discord.User) -> bool:
     return user.id in {762749123770056746, 1330770994138447892}  # replace with your admin IDs
 
 # ————————————————————————————————
+# A tiny WSGI filter that catches HEAD/GET on “/”
+# and responds directly, bypassing Flask entirely.
+def health_check(environ, start_response):
+    method = environ.get("REQUEST_METHOD", "")
+    path   = environ.get("PATH_INFO", "")
+    if path == "/" and method in ("GET", "HEAD"):
+        status = "200 OK"
+        headers = [("Content-Type", "text/plain; charset=utf-8")]
+        start_response(status, headers)
+        return [b"BOT is alive"]
+    return app.wsgi_app(environ, start_response)
+
+# Now import and configure Flask *after* health_check is defined
+from flask import Flask
 app = Flask(__name__)
 
-@app.route("/", methods=["GET", "HEAD"])
+# Tell Flask to use our filter first
+app.wsgi_app = health_check
+@app.route("/", methods=["GET","HEAD"])
 def home():
+    # Won’t actually be reached on Render’s health checks,
+    # but still good to have for local dev.
     return "BOT is alive", 200
+
 
 # ————————————————————————————————
 # Discord Bot Setup
