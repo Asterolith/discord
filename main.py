@@ -68,23 +68,24 @@ async def show_table(
     if sort_by and sort_by.lower() not in ['name', 'sing', 'dance', 'rally']:
         return await interaction.response.send_message("❌ Invalid sort column")
 
-    # Fetch just the rows needed for this page:
+    # Fetch only the rows needed for this page:
     page_data = load_page(sort_by, sort_desc, page)
     if not page_data:
         return await interaction.response.send_message("❌ Page out of range")
 
-    # Build the text block:
+    # Build the table text block
     lines = [HEADER, SEP]
     for row in page_data:
         lines.append(format_row(row))
         lines.append(blank_row())
     block = f"```css\n{chr(10).join(lines)}\n```"
 
-    # Instead of passing an int, load the full data list:
+    # —————————————————————————
+    # Instead of len(load_data()), load the full list:
     full_data = load_data()
     total = len(full_data)
 
-    # Now pass the list into the paginator (so it can do len(data) and slicing):
+    # Pass the list itself into the paginator, not just its length:
     view = TablePaginator(full_data, sort_by, sort_desc, page)
 
     await interaction.response.send_message(content=block, view=view)
