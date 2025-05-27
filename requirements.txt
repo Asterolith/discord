@@ -3,5 +3,5 @@
 idna
 gunicorn
 discord.py
-supabase-py
+supabase
 flask
