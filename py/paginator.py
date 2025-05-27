@@ -17,13 +17,16 @@ class TablePaginator(ui.View):
         self.prev_button.disabled = self.page <= 1
         self.next_button.disabled = self.page >= max_pages
 
+
     @ui.button(label='◀ Prev', style=discord.ButtonStyle.primary, custom_id='prev')
     async def prev_button(self, interaction: discord.Interaction, button: ui.Button):
         await self.change_page(interaction, self.page - 1)
 
+
     @ui.button(label='Next ▶', style=discord.ButtonStyle.primary, custom_id='next')
     async def next_button(self, interaction: discord.Interaction, button: ui.Button):
         await self.change_page(interaction, self.page + 1)
+
 
     async def change_page(self, interaction: discord.Interaction, new_page: int):
         self.page = new_page
@@ -37,6 +40,7 @@ class TablePaginator(ui.View):
         for row in page_data:
             lines.append(format_row(row))
             lines.append(blank_row())
+            
         block = '```css\n' + '\n'.join(lines) + '\n```'
         self.update_buttons()
         await interaction.response.edit_message(content=block, view=self)

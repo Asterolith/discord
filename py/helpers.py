@@ -17,6 +17,7 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 if not SUPABASE_URL or not SUPABASE_KEY:
     print("❌ Missing Supabase environment variables!")
     exit(1)
+
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
@@ -24,6 +25,19 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 def load_data():
     res = supabase.table("stats").select("*").execute()
     return res.data or []
+
+
+def load_page(sort_by: str = None, sort_desc: bool = False, page: int = 1):
+    '''Fetch only rows that need from Suppabase DB, already sorted & paged.'''
+    start = (page - 1) * ROWS_PER_PAGE
+    end = start + ROWS_PER_PAGE - 1
+    query = supabase.table("stats").select("*")
+
+    if sort_by:
+        #_Superbase ordering expected (ascending: bool)
+        query = query.order(sort_by, {"ascending": not sort_desc})
+
+    return query.range(start, end).execute().data or []
 
 
 def update_row(name, **kwargs):
@@ -69,3 +83,8 @@ def sort_data(data, column: str, descending: bool=False):
         v = row.get(column)
         return v if v is not None else ("" if column=='name' else -999999)
     return sorted(data, key=key_fn, reverse=descending)
+
+
+# Precompute header and separator once
+HEADER = format_header()
+SEP    = "-" * len(HEADER)

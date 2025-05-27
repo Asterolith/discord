@@ -11,30 +11,32 @@ from py.paginator import TablePaginator
 # ————————————————————————————————
 # Env & token
 TOKEN = os.getenv("DIS_TOKEN")
-if not TOKEN: raise RuntimeError("DIS_TOKEN missing")
+if not TOKEN: 
+    raise RuntimeError("DIS_TOKEN missing")
 TOKEN = TOKEN.strip()
 print(f"✅ Loaded Discord token (length {len(TOKEN)})")
 
 # ————————————————————————————————
-# Flask Keep-Alive Webserver
-def run_webserver():
-    # from flask import Flask
-    app = Flask("")
-    @app.route("/")
-    def home(): return "BOT is alive"
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT',3000)))
-Thread(target=run_webserver,daemon=True).start()
+# Flask Webserver (Gunicorn-compatible)
+app = Flask(__name__)
 
-# ————————————————
+@app.route("/")
+def home():
+    return "BOT is alive"
+
+def run_webserver():
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 3000)))
+
+# ————————————————————————————————
 # Discord Bot Setup
 intents = discord.Intents.default()
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents)
 tree = bot.tree
 
 @bot.event
 async def on_ready():
     await tree.sync()
-    print(f"Logged in as {bot.user.name} ({bot.user.id})")
+    print(f"✅ Logged in as {bot.user.name} ({bot.user.id})")
 
 # ————————————————
 # Slash Commands
@@ -50,38 +52,23 @@ async def show_table(
     sort_desc: bool = False,
     page: int = 1
 ):
-    data = load_data()
+    if sort_by and sort_by.lower() not in ['name', 'sing', 'dance', 'rally']:
+        return await interaction.response.send_message("❌ Invalid sort column")
 
-    if sort_by:
-        col = sort_by.lower()
-        if col in ['name','sing','dance','rally']:
-            data = sort_data(data, col, sort_desc)
-        else:
-            return await interaction.response.send_message('❌ Invalid sort column')
+    # Get only the needed rows
+    page_data = load_page(sort_by, sort_desc, page)
 
-    paginator=TablePaginator(data, sort_by, sort_desc, page)
-    #_init render
-    start = (page - 1) * ROWS_PER_PAGE
-    page_data = data[start:start + ROWS_PER_PAGE]
-    lines = [format_header(), '-' * len(format_header())]
+    # Render lines
+    lines = [HEADER, SEP]
     for row in page_data:
         lines.append(format_row(row))
         lines.append(blank_row())
 
-    block = '```css\n' + '\n'.join(lines) + '\n```'
-    await interaction.response.send_message(content=block, view=paginator)
+    block = f"```css\n{chr(10).join(lines)}\n```"
+    all_data = load_data()  # Needed for paginator logic
+    view = TablePaginator(all_data, sort_by, sort_desc, page)
 
-
-    # if len(table_text) <= 1990:
-    #     await interaction.response.send_message(f"```{table_text}```")
-    # else:
-    #     tmp = "table.txt"
-    #     with open(tmp, "w", encoding="utf-8") as f:
-    #         f.write(table_text)
-    #     await interaction.response.send_message(
-    #         content="Table is too large to show directly, here’s a text file:",
-    #         file=discord.File(tmp)
-    #     )
+    await interaction.response.send_message(content=block, view=view)
 
 
 @tree.command(name="update_table", description="Update a row in the table")
@@ -107,6 +94,6 @@ async def update_table(
     await interaction.response.send_message(f"❌ No entry found for `{name}`")
 
 # ————————————————
-# Start webserver and bot
-# Thread(target=run_webserver, daemon=True).start()
+# Bot Run (Gunicorn runs Flask externally)
+# Thread(target=run_webserver, daemon=True).start() #_NOT for production
 bot.run(TOKEN)
