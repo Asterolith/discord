@@ -1,11 +1,10 @@
 import os
 import discord
 from discord.ext import commands
-from discord import app_commands
+from discord import app_commands, ui
 from flask import Flask
 from threading import Thread
 from supabase import create_client, Client
-from tablePaginator import TablePaginator
 
 # ————————————————————————————————
 # Constants for Table Formatting
@@ -21,11 +20,8 @@ TOKEN = os.getenv("DIS_TOKEN")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-if not TOKEN:
-    print("❌ ERROR: DIS_TOKEN env var not found or empty!")
-    exit(1)
-if not SUPABASE_URL or not SUPABASE_KEY:
-    print("❌ Missing Supabase environment variables!")
+if not TOKEN or not SUPABASE_URL or not SUPABASE_KEY:
+    print("❌ Missing required environment variables!")
     exit(1)
 
 TOKEN = TOKEN.strip()
@@ -59,14 +55,16 @@ def format_header():
 
 def format_row(d):
     # Ensure numeric fields default to 0 if None
-    name_col = f"{d.get('name',''):<{NAME_WIDTH}}"
-    sing_val = d.get('sing') if d.get('sing') is not None else 0
-    dance_val = d.get('dance') if d.get('dance') is not None else 0
-    rally_val = d.get('rally') if d.get('rally') is not None else 0
-    sing_col = f"{sing_val:<{SING_WIDTH}}"
-    dance_col = f"{dance_val:<{DANCE_WIDTH}}"
-    rally_col = f"{rally_val:<{RALLY_WIDTH}}"
-    return f"{name_col} | {sing_col} | {dance_col} | {rally_col}"
+    name = f"{d.get('name',''):<{NAME_WIDTH}}"
+    sing = d.get('sing') if d.get('sing') is not None else 0
+    dance = d.get('dance') if d.get('dance') is not None else 0
+    rally = d.get('rally') if d.get('rally') is not None else 0
+    return (
+        f"{name:<{NAME_WIDTH}} | "
+        f"{sing:<{SING_WIDTH}} | "
+        f"{dance:<{DANCE_WIDTH}} | "
+        f"{rally:<{RALLY_WIDTH}}"
+    )
 
     # separator = "-" * len(header)
 
@@ -87,6 +85,47 @@ def sort_data(data, column: str, descending: bool = False):
     return sorted(data, key=key_fn, reverse=descending)
 
 # ————————————————
+# Paginator View
+typedef = ui.View
+class TablePaginator(ui.View):
+    def __init__(self, data, sort_by: str, sort_desc: bool, page: int):
+        super().__init__(timeout=120)
+        self.data = data
+        self.sort_by = sort_by
+        self.sort_desc = sort_desc
+        self.page = page
+        self.update_buttons()
+
+    def update_buttons(self):
+        max_pages = max(1, (len(self.data) - 1) // ROWS_PER_PAGE + 1)
+        self.prev_button.disabled = self.page <= 1
+        self.next_button.disabled = self.page >= max_pages
+
+    @ui.button(label='◀ Prev', style=discord.ButtonStyle.primary, custom_id='prev')
+    async def prev_button(self, interaction: discord.Interaction, button: ui.Button):
+        await self.change_page(interaction, self.page - 1)
+
+    @ui.button(label='Next ▶', style=discord.ButtonStyle.primary, custom_id='next')
+    async def next_button(self, interaction: discord.Interaction, button: ui.Button):
+        await self.change_page(interaction, self.page + 1)
+
+    async def change_page(self, interaction: discord.Interaction, new_page: int):
+        self.page = new_page
+        # re-sort
+        data = sort_data(self.data, self.sort_by, self.sort_desc) if self.sort_by else self.data
+        # paginate
+        start = (self.page - 1) * ROWS_PER_PAGE
+        page_data = data[start:start + ROWS_PER_PAGE]
+        # re-render
+        lines = [format_header(), '-' * len(format_header())]
+        for row in page_data:
+            lines.append(format_row(row))
+            lines.append('')
+        block = '```css\n' + '\n'.join(lines) + '\n```'
+        self.update_buttons()
+        await interaction.response.edit_message(content=block, view=self)
+
+# ————————————————
 # Flask Keep-Alive Webserver
 app = Flask("")
 @app.route("/")
@@ -94,8 +133,7 @@ def home():
     return "BOT is alive"
 
 def run_webserver():
-    port = int(os.environ.get("PORT", 3000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 3000)))
 
 # ————————————————
 # Discord Bot Setup
@@ -124,19 +162,25 @@ async def show_table(
 ):
     data = load_data()
 
-    #_ sorting & pagination logic to pick `page_data` 
-    lines = [format_header(), '-' * len(format_header())]
-    for row in data:
+    if sort_by:
+        col = sort_by.lower()
+        if col in ['name','sing','dance','rally']:
+            data = sort_data(data, col, sort_desc)
+        else:
+            return await interaction.response.send_message('❌ Invalid sort column')
+    # paginate
+    start = (page-1)*ROWS_PER_PAGE
+    page_data = data[start:start+ROWS_PER_PAGE]
+    if not page_data:
+        return await interaction.response.send_message('❌ Page out of range')
+    # initial render
+    lines = [format_header(), '-'*len(format_header())]
+    for row in page_data:
         lines.append(format_row(row))
-        lines.append("") #_blank line for reading ease
-    
-    block = "```css\n" + "\n".join(lines) + "\n```"
-    # table_text = table_text.replace("```", "```py")
-    # await interaction.response.send_message(f"```{table_text}```")
-    
-    #_create paginator
-    paginator = TablePaginator(data, sort_by, sort_desc, page)
-    await interaction.response.send_message(content=block, view=paginator)
+        lines.append('')
+    block = '```css\n' + '\n'.join(lines) + '\n```'
+    view = TablePaginator(data, sort_by, sort_desc, page)
+    await interaction.response.send_message(content=block, view=view)
 
 
     # if len(table_text) <= 1990:
@@ -152,12 +196,7 @@ async def show_table(
 
 
 @tree.command(name="update_table", description="Update a row in the table")
-@app_commands.describe(
-    name="Name of the person",
-    sing="Value for sing",
-    dance="Value for dance",
-    rally="Value for rally (optional)"
-)
+@app_commands.describe(name='Person name', sing='New sing', dance='New dance', rally='New rally')
 async def update_table(
     interaction: discord.Interaction,
     name: str,
@@ -165,10 +204,9 @@ async def update_table(
     dance: int,
     rally: float = None
 ):
-    data = load_data()
     found = False
 
-    for row in data:
+    for row in load_data():
         if row["name"].lower() == name.lower():
             update_row(name, sing=sing, dance=dance, rally=rally)
             # Build feedback message dynamically
