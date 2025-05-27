@@ -42,10 +42,6 @@ def _wsgi_with_default_host(environ, start_response):
     # Now call the real Flask app
     return _original_wsgi(environ, start_response)
 
-# Monkey-patch Flask’s wsgi_app to use our wrapper
-app.wsgi_app = _wsgi_with_default_host
-
-
 @app.route("/", methods=["GET", "HEAD"])
 def home():
     return "BOT is alive", 200
