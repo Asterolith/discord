@@ -25,7 +25,7 @@ def home():
     return "BOT is alive"
 
 def run_webserver():
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 3000)))
+    app.run(host="0.0.0.0", port=3000)
 
 # ————————————————————————————————
 # Discord Bot Setup
