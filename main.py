@@ -1,3 +1,4 @@
+#_main.py
 import os
 import threading
 import discord
@@ -108,7 +109,7 @@ async def add_row(interaction: discord.Interaction, name: str, sing: int, dance:
     if not is_admin(interaction.user):
         return await interaction.response.send_message("❌ You are not authorized.")
 
-    supabase.table("stats").insert({
+    admin_supabase.table("stats").insert({
         "name": name, "sing": sing, "dance": dance, "rally": rally
     }).execute()
 
@@ -121,7 +122,11 @@ async def delete_row(interaction: discord.Interaction, name: str):
     if not is_admin(interaction.user):
         return await interaction.response.send_message("❌ You are not authorized.")
 
-    supabase.table("stats").delete().eq("name", name).execute()
+    res = admin_supabase.table("stats").delete().eq("name", name).execute()
+
+    if res.error:
+        return await interaction.response.send_message(f"❌ Delete failed: {res.error.message}")
+
     invalidate_cache()
     await interaction.response.send_message(f"🗑️ Row for `{name}` deleted.")
 

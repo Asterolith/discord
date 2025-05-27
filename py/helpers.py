@@ -14,12 +14,17 @@ ROWS_PER_PAGE = 20
 
 # Supabase client
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-if not SUPABASE_URL or not SUPABASE_KEY:
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+if not SUPABASE_URL or not SUPABASE_ANON_KEY or not SUPABASE_SERVICE_KEY:
     print("❌ Missing Supabase environment variables!")
     exit(1)
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# Public client (for select/update)
+supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+# Admin client (for insert/delete only)
+admin_supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 
 # Data I/O
