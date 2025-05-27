@@ -65,7 +65,8 @@ async def show_table(
     page_data = data[start:start + ROWS_PER_PAGE]
     lines = [format_header(), '-' * len(format_header())]
     for row in page_data:
-        lines.append(format_row(row)); lines.append('')
+        lines.append(format_row(row))
+        lines.append(blank_row())
 
     block = '```css\n' + '\n'.join(lines) + '\n```'
     await interaction.response.send_message(content=block, view=paginator)

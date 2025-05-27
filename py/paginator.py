@@ -1,7 +1,7 @@
 # Paginator View
 import discord
 from discord import ui
-from py.helpers import format_header, format_row, sort_data, ROWS_PER_PAGE
+from py.helpers import format_header, format_row, blank_row, sort_data, ROWS_PER_PAGE
 
 class TablePaginator(ui.View):
     def __init__(self, data, sort_by: str, sort_desc: bool, page: int):
@@ -36,7 +36,7 @@ class TablePaginator(ui.View):
         lines = [format_header(), '-' * len(format_header())]
         for row in page_data:
             lines.append(format_row(row))
-            lines.append('')
+            lines.append(blank_row())
         block = '```css\n' + '\n'.join(lines) + '\n```'
         self.update_buttons()
         await interaction.response.edit_message(content=block, view=self)

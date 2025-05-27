@@ -8,7 +8,7 @@ NAME_WIDTH = 15
 SING_WIDTH = 7
 DANCE_WIDTH = 7
 RALLY_WIDTH = 7
-ROWS_PER_PAGE = 10
+ROWS_PER_PAGE = 25
 
 
 # Supabase client
@@ -52,6 +52,15 @@ def format_row(d):
         f"{sing:<{SING_WIDTH}} | "
         f"{dance:<{DANCE_WIDTH}} | "
         f"{rally:<{RALLY_WIDTH}}"
+    )
+
+
+def blank_row():
+    return (
+        f"{'':<{NAME_WIDTH}} | "
+        f"{'':<{SING_WIDTH}}  "
+        f"{'':<{DANCE_WIDTH}} | "
+        f"{'':<{RALLY_WIDTH}}"
     )
 
 
