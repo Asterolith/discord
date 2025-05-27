@@ -55,6 +55,10 @@ async def show_table(
     sort_desc: bool = False,
     page: int = 1
 ):
+     # 1) Defer the response so Discord doesn’t timeout
+    await interaction.response.defer(thinking=True)
+
+    # 2) Do the slow operations
     if sort_by and sort_by.lower() not in ['name', 'sing', 'dance', 'rally']:
         return await interaction.response.send_message("❌ Invalid sort column")
 
@@ -78,7 +82,8 @@ async def show_table(
     # Pass the list itself into the paginator, not just its length:
     view = TablePaginator(full_data, sort_by, sort_desc, page)
 
-    await interaction.response.send_message(content=block, view=view)
+    # 3) Send with followup
+    await interaction.followup.send(content=block, view=view)
 
 
 @tree.command(name="update_table", description="Update a row in the table")
@@ -119,16 +124,26 @@ async def add_row(interaction: discord.Interaction, name: str, sing: int, dance:
 
 @tree.command(name="delete_row", description="Delete a row (admin only)")
 async def delete_row(interaction: discord.Interaction, name: str):
+    # 1) Authoritation check
     if not is_admin(interaction.user):
         return await interaction.response.send_message("❌ You are not authorized.")
 
-    res = admin_supabase.table("stats").delete().eq("name", name).execute()
+    # 2) Defer the response so we won’t hit the “Unknown interaction” timeout
+    await interaction.response.defer(thinking=True)
 
-    if res.error:
-        return await interaction.response.send_message(f"❌ Delete failed: {res.error.message}")
+    # 3) Perform the delete using the service_role client
+    try:
+        res = admin_supabase.table("stats").delete().eq("name", name).execute()
+    except Exception as e:
+        return await interaction.followup.send(f"❌ Delete failed: {e}")
 
+    # 4) If no rows were deleted, res.data will be empty or None
+    if not res.data:
+        return await interaction.followup.send(f"❌ No row found for `{name}` to delete.")
+
+    # 5) Invalidate our cache, then confirm to the user
     invalidate_cache()
-    await interaction.response.send_message(f"🗑️ Row for `{name}` deleted.")
+    await interaction.followup.send(f"🗑️ Row for `{name}` deleted.")
 
 
 # ————————————————————————————————
