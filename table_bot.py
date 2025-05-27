@@ -6,7 +6,7 @@ from flask import Flask
 from threading import Thread
 from supabase import create_client, Client
 
-# ————————————————
+# ————————————————————————————————
 # Constants for Table Formatting
 NAME_WIDTH = 15
 SING_WIDTH = 7
@@ -14,7 +14,7 @@ DANCE_WIDTH = 7
 RALLY_WIDTH = 7
 ROWS_PER_PAGE = 25
 
-# ————————————————
+# ————————————————————————————————
 # Environment Variables
 TOKEN = os.getenv("DIS_TOKEN")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -30,11 +30,11 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 TOKEN = TOKEN.strip()
 print(f"✅ Loaded Discord token (length {len(TOKEN)})")
 
-# ————————————————
+# ————————————————————————————————
 # Supabase Client Setup
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-
+# ————————————————————————————————
 # Helper Functions
 def load_data():
     res = supabase.table("stats").select("*").execute()
@@ -57,10 +57,14 @@ def format_header():
 
 
 def format_row(d):
-    name_col = f"{d['name']:<{NAME_WIDTH}}"
-    sing_col = f"{d.get('sing', 0):<{SING_WIDTH}}"
-    dance_col = f"{d.get('dance', 0):<{DANCE_WIDTH}}"
-    rally_col = f"{d.get('rally', 0):<{RALLY_WIDTH}}"
+    # Ensure numeric fields default to 0 if None
+    name_col = f"{d.get('name',''):<{NAME_WIDTH}}"
+    sing_val = d.get('sing') if d.get('sing') is not None else 0
+    dance_val = d.get('dance') if d.get('dance') is not None else 0
+    rally_val = d.get('rally') if d.get('rally') is not None else 0
+    sing_col = f"{sing_val:<{SING_WIDTH}}"
+    dance_col = f"{dance_val:<{DANCE_WIDTH}}"
+    rally_col = f"{rally_val:<{RALLY_WIDTH}}"
     return f"{name_col} | {sing_col} | {dance_col} | {rally_col}"
 
     # separator = "-" * len(header)
@@ -137,7 +141,8 @@ async def show_table(
         return await interaction.response.send_message("❌ That page is empty.")
 
     #_Build table lines
-    lines = [format_header(), "-" * len(format_header())]
+    header = format_header()
+    lines = [header, '-' * len(header)]
     for row in page_data:
         lines.append(format_row(row))
         lines.append("") #_blank line for reading ease
@@ -146,6 +151,9 @@ async def show_table(
     #_css highlighting
     table_text = table_text.replace("```", "```py")
     await interaction.response.send_message(f"```{table_text}```")
+
+    # CSS highlighting for monospace readability
+    # await interaction.response.send_message(f"```css\n{table_text}\n```")
 
 
     # if len(table_text) <= 1990:
@@ -180,27 +188,15 @@ async def update_table(
     for row in data:
         if row["name"].lower() == name.lower():
             update_row(name, sing=sing, dance=dance, rally=rally)
+            # Build feedback message dynamically
+            feedback = []
+            if sing is not None: feedback.append(f"sing={sing}")
+            if dance is not None: feedback.append(f"dance={dance}")
+            if rally is not None: feedback.append(f"rally={rally}")
             return await interaction.response.send_message(
-                f"✅ Updated `{name}` with values:"
-                f"{(' sing='+str(sing)) if sing is not None else ''}"
-                f"{(' dance='+str(dance)) if dance is not None else ''}"
-                f"{(' rally='+str(rally)) if rally is not None else ''}"
+                f"✅ Updated `{name}` with {' '.join(feedback)}"
             )
     await interaction.response.send_message(f"❌ No entry found for `{name}`")
-
-    # for row in data:
-    #     if row["name"].lower() == name.lower():
-    #         update_row(name, sing, dance, rally if rally is not None else row["rally"])
-    #         found = True
-    #         break
-
-    # if found:
-    #     await interaction.response.send_message(
-    #         f"✅ Updated `{name}` with values: sing={sing}, dance={dance}, rally={rally}"
-    #     )
-    # else:
-    #     await interaction.response.send_message(f"❌ No entry found for `{name}`")
-
 
 # ————————————————
 # Start webserver and bot
