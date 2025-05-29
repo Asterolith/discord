@@ -1,6 +1,5 @@
-# Helper Functions
-import os
-import time
+# py/helpers.py
+import discord, os, time
 from supabase import create_client, Client
 
 
@@ -10,7 +9,6 @@ SING_WIDTH = 7
 DANCE_WIDTH = 7
 RALLY_WIDTH = 7
 ROWS_PER_PAGE = 20
-
 
 # Supabase client
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -26,6 +24,9 @@ supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 # Admin client (for insert/delete only)
 admin_supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
+
+def is_admin(user: discord.User) -> bool:
+    return user.id in {762749123770056746, 1330770994138447892}  # replace with your admin IDs
 
 # Data I/O
 # Simple in-memory cache

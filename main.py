@@ -1,30 +1,31 @@
 #_main.py
-import os, threading, discord
-from flask import request
-from supabase import create_client
+import os, threading
+import discord
 from discord import app_commands
 from discord.ext import commands
+from flask import Flask
 
-from py.helpers import *
+from py.helpers import (
+    supabase, admin_supabase, load_page, load_data,
+    update_row, invalidate_cache, is_admin,
+    HEADER, SEP, format_row, blank_row
+)
 from py.paginator import TablePaginator
 
 
-
-# ————————————————————————————————
-# Env & token
-TOKEN = os.getenv("DIS_TOKEN")
-if not TOKEN: 
+# — Env & Discord token —
+TOKEN = os.getenv("DIS_TOKEN", "").strip()
+if not TOKEN:
     raise RuntimeError("DIS_TOKEN missing")
-TOKEN = TOKEN.strip()
-print(f"✅ Loaded Discord token (length {len(TOKEN)})")
+print(f"✅ Discord token length: {len(TOKEN)}")
 
-# ————————————————————————————————
-def is_admin(user: discord.User) -> bool:
-    return user.id in {762749123770056746, 1330770994138447892}  # replace with your admin IDs
+# — Flask app with health check —
+# app = Flask(__name__)
+# @app.route("/", methods=["GET", "HEAD"])
+# def health():
+#     return "OK", 200
 
-# ————————————————————————————————
-# A tiny WSGI filter that catches HEAD/GET on “/”
-# and responds directly, bypassing Flask entirely.
+# # A tiny WSGI filter that catches HEAD/GET on “/” and responds directly, bypassing Flask entirely.
 def health_check(environ, start_response):
     method = environ.get("REQUEST_METHOD", "")
     path   = environ.get("PATH_INFO", "")
@@ -35,21 +36,17 @@ def health_check(environ, start_response):
         return [b"BOT is alive"]
     return app.wsgi_app(environ, start_response)
 
-# Now import and configure Flask *after* health_check is defined
-from flask import Flask
+# 2) Now import Flask and tell Flask to use our filter first
 app = Flask(__name__)
-
-# Tell Flask to use our filter first
 app.wsgi_app = health_check
+
+# 3) Keep a normal route too, for local dev
 @app.route("/", methods=["GET","HEAD"])
 def home():
-    # Won’t actually be reached on Render’s health checks,
-    # but still good to have for local dev.
     return "BOT is alive", 200
 
 
-# ————————————————————————————————
-# Discord Bot Setup
+# — Discord bot setup —
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 tree = bot.tree
@@ -61,51 +58,47 @@ async def on_ready():
 
 # ————————————————————————————————
 # Slash Commands
-@tree.command(name="show_table", description="Display table data with optional sorting & pagination")
+# — show_table command —
+@tree.command(name="show_table", description="Show table with sort & pagination")
 @app_commands.describe(
-    sort_by="Column to sort by (name, sing, dance, rally)",
-    sort_desc="Sort descending? (default false)",
-    page="Page number (default 1)"
+    sort_by="name, sing, dance, or rally",
+    sort_desc="false for ascending order",
+    page="page number"
 )
 async def show_table(
     interaction: discord.Interaction,
     sort_by: str = None,
-    sort_desc: bool = False,
+    sort_desc: bool = True,
     page: int = 1
 ):
      # 1) Defer the response so Discord doesn’t timeout
     await interaction.response.defer(thinking=True)
 
-    # 2) Do the slow operations
+    # 2) Validate sort_by
     if sort_by and sort_by.lower() not in ['name', 'sing', 'dance', 'rally']:
-        return await interaction.response.send_message("❌ Invalid sort column")
+        return await interaction.followup.send("❌ Invalid sort column")
 
     # Fetch only the rows needed for this page:
     page_data = load_page(sort_by, sort_desc, page)
     if not page_data:
-        return await interaction.response.send_message("❌ Page out of range")
+        return await interaction.followup.send("❌ Page out of range")
 
-    # Build the table text block
+    # Format and build block
     lines = [HEADER, SEP]
     for row in page_data:
         lines.append(format_row(row))
         lines.append(blank_row())
     block = f"```css\n{chr(10).join(lines)}\n```"
 
-    # —————————————————————————
-    # Instead of len(load_data()), load the full list:
-    full_data = load_data()
-    total = len(full_data)
-
     # Pass the list itself into the paginator, not just its length:
-    view = TablePaginator(full_data, sort_by, sort_desc, page)
+    view = TablePaginator(load_data(), sort_by, sort_desc, page)
 
     # 3) Send with followup
     await interaction.followup.send(content=block, view=view)
 
-
+# — update_table —
 @tree.command(name="update_table", description="Update a row in the table")
-@app_commands.describe(name='Person name', sing='New sing', dance='New dance', rally='New rally')
+@app_commands.describe(name="entry name", sing="sing value", dance="dance value", rally="rally value")
 async def update_table(
     interaction: discord.Interaction,
     name: str,
@@ -121,50 +114,51 @@ async def update_table(
             if sing is not None: feedback.append(f"sing={sing}")
             if dance is not None: feedback.append(f"dance={dance}")
             if rally is not None: feedback.append(f"rally={rally}")
+            invalidate_cache()
             return await interaction.response.send_message(
                 f"✅ Updated `{name}` with {' '.join(feedback)}"
             )
     await interaction.response.send_message(f"❌ No entry found for `{name}`")
 
-
+# — add_row —
 @tree.command(name="add_row", description="Add a new row (admin only)")
-async def add_row(interaction: discord.Interaction, name: str, sing: int, dance: int, rally: float):
+async def add_row(
+    interaction: discord.Interaction,
+    name: str,
+    sing: int,
+    dance: int,
+    rally: float
+):
     if not is_admin(interaction.user):
-        return await interaction.response.send_message("❌ You are not authorized.")
+        return await interaction.response.send_message("❌ You are NOT authorized.")
 
     admin_supabase.table("stats").insert({
         "name": name, "sing": sing, "dance": dance, "rally": rally
     }).execute()
-
     invalidate_cache()
     await interaction.response.send_message(f"✅ Row for `{name}` added.")
 
-
+# — delete_row —
 @tree.command(name="delete_row", description="Delete a row (admin only)")
 async def delete_row(interaction: discord.Interaction, name: str):
-    # 1) Authoritation check
     if not is_admin(interaction.user):
         return await interaction.response.send_message("❌ You are not authorized.")
 
-    # 2) Defer the response so we won’t hit the “Unknown interaction” timeout
     await interaction.response.defer(thinking=True)
 
-    # 3) Perform the delete using the service_role client
     try:
         res = admin_supabase.table("stats").delete().eq("name", name).execute()
     except Exception as e:
         return await interaction.followup.send(f"❌ Delete failed: {e}")
 
-    # 4) If no rows were deleted, res.data will be empty or None
     if not res.data:
         return await interaction.followup.send(f"❌ No row found for `{name}` to delete.")
 
-    # 5) Invalidate our cache, then confirm to the user
     invalidate_cache()
     await interaction.followup.send(f"🗑️ Row for `{name}` deleted.")
 
 
-# ————————————————————————————————
+# — Run bot in background & WSGI —
 def start_bot():
     bot.run(TOKEN)
 

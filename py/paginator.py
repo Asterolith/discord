@@ -1,4 +1,4 @@
-# Paginator View
+# py/paginator.py
 import discord
 from discord import ui
 from py.helpers import format_header, format_row, blank_row, sort_data, ROWS_PER_PAGE
