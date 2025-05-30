@@ -1,5 +1,4 @@
-
-
+#_ commands/show_table.py
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -8,7 +7,7 @@ from py.helpers import (
     ROWS_PER_PAGE, HEADER, SEP,
     format_row, blank_row, sort_data
 )
-from ..py.paginator import TablePaginator
+from py.paginator import TablePaginator
 
 
 # /show_table: pagination & sort for stats

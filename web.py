@@ -3,6 +3,7 @@ import os, threading
 from flask import Flask
 from bot import bot
 
+
 app = Flask(__name__)
 
 @app.route('/')

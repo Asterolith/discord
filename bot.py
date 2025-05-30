@@ -8,6 +8,7 @@ from commands import (
     manage_row, manage_editor, ping
 )
 
+
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
