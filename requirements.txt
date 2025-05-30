@@ -1,7 +1,7 @@
 
 # requirements.txt
-idna
-gunicorn
 discord.py
-supabase
 flask
+gunicorn
+supabase
+PyJWT
