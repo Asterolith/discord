@@ -69,7 +69,7 @@ async def on_ready():
 )
 async def show_table(interaction: discord.Interaction,
                      sort_by: str = None,
-                     sort_desc: bool = False,
+                     sort_desc: bool = True,
                      page: int = 1):
     # Defer the response so Discord doesn’t timeout
     await interaction.response.defer(thinking=True)
@@ -79,7 +79,11 @@ async def show_table(interaction: discord.Interaction,
         return await interaction.followup.send('❌ Invalid sort column')
 
     # User-scoped client for RLS
-    client = user_client_for(interaction.user.id)
+    if is_admin(interaction.user):
+        client = admin_supabase    # uses your service_role key, bypasses RLS
+    else:
+        client = user_client_for(interaction.user.id)
+
     query = client.table('stats').select('*')
     if sort_by:
         query = query.order(sort_by.lower(), ascending=not sort_desc)
@@ -116,7 +120,11 @@ async def update_table(interaction: discord.Interaction,
                        rally: float = None):
     await interaction.response.defer(thinking=True)
 
-    client = user_client_for(interaction.user.id)
+    if is_admin(interaction.user):
+        client = admin_supabase    # uses your service_role key, bypasses RLS
+    else:
+        client = user_client_for(interaction.user.id)
+    
     # Build update payload, dropping None
     payload = {k: v for k, v in {"sing": sing, "dance": dance, "rally": rally}.items() if v is not None}
 
