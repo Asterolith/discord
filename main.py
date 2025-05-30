@@ -3,7 +3,7 @@ import os, threading
 import discord
 from discord import app_commands
 from discord.ext import commands
-from flask import Flask
+from flask import Flask, request
 from datetime import datetime
 
 from py.helpers import (
@@ -22,31 +22,6 @@ if not TOKEN:
     raise RuntimeError("DIS_TOKEN missing")
 print(f"✅ Discord token length: {len(TOKEN)}")
 
-# — Flask app with health check —
-# app = Flask(__name__)
-# @app.route("/", methods=["GET", "HEAD"])
-# def health():
-#     return "OK", 200
-
-# 1) A tiny WSGI filter that catches HEAD/GET on “/” and responds directly, bypassing Flask entirely.
-def health_check(environ, start_response):
-    method = environ.get("REQUEST_METHOD", "")
-    path   = environ.get("PATH_INFO", "")
-    if path == "/" and method in ("GET", "HEAD"):
-        status = "200 OK"
-        headers = [("Content-Type", "text/plain; charset=utf-8")]
-        start_response(status, headers)
-        return [b"BOT is alive"]
-    return app.wsgi_app(environ, start_response)
-
-# 2) Now import Flask and tell Flask to use our filter first
-app = Flask(__name__)
-app.wsgi_app = health_check
-
-# 3) Keep a normal route too, for local dev
-@app.route("/", methods=["GET","HEAD"])
-def home():
-    return "BOT is alive", 200
 
 # —————————————————————————————
 # — Discord bot setup —
@@ -54,10 +29,38 @@ intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 tree = bot.tree
 
+app = Flask(__name__)
+
 @bot.event
 async def on_ready():
     await tree.sync()
     print(f"✅ Logged in as {bot.user.name} ({bot.user.id})")
+
+# this keeps Render happy
+@app.route('/')
+def index():
+    return "Bot is running!"
+
+
+# # 1) A tiny WSGI filter that catches HEAD/GET on “/” and responds directly, bypassing Flask entirely.
+# def health_check(environ, start_response):
+#     method = environ.get("REQUEST_METHOD", "")
+#     path   = environ.get("PATH_INFO", "")
+#     if path == "/" and method in ("GET", "HEAD"):
+#         status = "200 OK"
+#         headers = [("Content-Type", "text/plain; charset=utf-8")]
+#         start_response(status, headers)
+#         return [b"BOT is alive"]
+#     return app.wsgi_app(environ, start_response)
+
+# # 2) Now import Flask and tell Flask to use our filter first
+# app = Flask(__name__)
+# app.wsgi_app = health_check
+
+# # 3) Keep a normal route too, for local dev
+# @app.route("/", methods=["GET","HEAD"])
+# def home():
+#     return "BOT is alive", 200
 
 # ————————————————————————————————
 # — Table stats —
@@ -312,8 +315,12 @@ async def ping(interaction: discord.Interaction):
 
 # —————————————————————————————
 # — Run bot in background & WSGI —
-def start_bot():
+def run_bot():
     bot.run(TOKEN)
 
 # Start Discord in a background thread; Flask (Gunicorn) will serve the HTTP side.
-threading.Thread(target=start_bot, daemon=True).start()
+threading.Thread(target=run_bot, daemon=True).start()
+
+if __name__ == "__main__":
+    threading.Thread(target=run_bot).start()
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
