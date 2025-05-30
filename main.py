@@ -90,7 +90,7 @@ async def show_table(interaction: discord.Interaction,
 
     query = client.table('stats').select('*')
     if sort_by:
-        query = query.order(sort_by.lower(), not sort_desc, nulls_first=True)
+        query = query.order(sort_by.lower(), not sort_desc)
 
     # Pagination
     start = (page - 1) * ROWS_PER_PAGE
@@ -114,7 +114,15 @@ async def show_table(interaction: discord.Interaction,
 
     view = TablePaginator(full_data, sort_by, sort_desc, page)
 
-    await interaction.followup.send(content=block, view=view)
+    try:
+        await interaction.response.edit_message(content=block, view=view)
+    except discord.errors.NotFound:
+        # fallback to editing the original followup
+        await interaction.followup.edit_message(
+        message_id=interaction.message.id,
+        content=block,
+        view=view
+        )
 
 
 # — update_table —
