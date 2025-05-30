@@ -196,14 +196,12 @@ async def view_editors(interaction: discord.Interaction):
                             .execute()
         rows = res.data or []
     except Exception as e:
-        return await interaction.response.send_message(
+        return await interaction.followup.send(
             f"❌ Failed to fetch editors: {e}", ephemeral=True
         )
 
     if not rows:
-        return await interaction.response.send_message(
-            "ℹ️ No editors found.", ephemeral=True
-        )
+        return await interaction.followup.send("ℹ️ No editors found.", ephemeral=True)
 
     # Build a simple code block table
     lines = ["ID               | Name#Discriminator | Added At (UTC)"]
