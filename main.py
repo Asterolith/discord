@@ -184,37 +184,43 @@ async def delete_row(interaction: discord.Interaction, name: str):
     description="List all current editors (admin only)"
 )
 async def view_editors(interaction: discord.Interaction):
+    # 1) Authorization
     if not is_admin(interaction.user):
         await interaction.response.send_message("❌ You’re not authorized.", ephemeral=True)
         return
 
+    # 2) Defer before the DB hit
     await interaction.response.defer(thinking=True)
 
+    # 3) Fetch & order in one go
     try:
         res = admin_supabase.table("stats_editors_rights") \
-                            .select("discord_id, discord_name, discriminator, added_at") \
-                            .order("added_at", {"ascending": False}) \
-                            .execute()
+                           .select("discord_id, discord_name, discriminator, added_at") \
+                           .order("added_at", ascending=False) \
+                           .execute()
         rows = res.data or []
     except Exception as e:
-        return await interaction.followup.send(
-            f"❌ Failed to fetch editors: {e}", ephemeral=True
-        )
+        return await interaction.followup.send(f"❌ Failed to fetch editors: {e}", ephemeral=True)
 
+    # 4) Empty guard
     if not rows:
         return await interaction.followup.send("ℹ️ No editors found.", ephemeral=True)
 
-    # Build a simple code block table
-    lines = ["ID               | Name#Discriminator | Added At (UTC)"]
-    lines.append("-" * len(lines[0]))
+    # 5) Build the table
+    header = "ID               | Name#Discriminator | Added At (UTC)"
+    sep    = "-" * len(header)
+    lines  = [header, sep]
+
     for r in rows:
+        # parse timestamp safely
         ts = datetime.fromisoformat(r["added_at"]).strftime("%Y-%m-%d %H:%M")
-        lines.append(
-            f"{r['discord_id']:<16} | {r['discord_name']}#{r['discriminator']:<8} | {ts}"
-        )
+        lines.append(f"{r['discord_id']:<16} | {r['discord_name']}#{r['discriminator']:<8} | {ts}")
 
     table = "```" + "\n".join(lines) + "```"
+
+    # 6) Send as follow-up
     await interaction.followup.send(table, ephemeral=True)
+
 
 
 # — add_editor — Admin only
