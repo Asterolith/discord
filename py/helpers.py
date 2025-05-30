@@ -12,6 +12,10 @@ if not SUPABASE_URL or not SUPABASE_ANON_KEY or not SUPABASE_SERVICE_KEY:
     print("❌ Missing Supabase environment variables!")
     exit(1)
 
+print("🔑 SUPABASE_URL:", SUPABASE_URL)
+print("🔑 ANON_KEY LEN:", len(SUPABASE_ANON_KEY or ""))
+print("🔑 SERVICE_KEY LEN:", len(SUPABASE_SERVICE_KEY or ""))
+
 # Formatting widths
 NAME_WIDTH   = 15
 SING_WIDTH   = 7

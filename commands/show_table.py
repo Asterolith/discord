@@ -6,8 +6,8 @@ from py.helpers import (
     ROWS_PER_PAGE, HEADER, SEP,
     sort_data, format_row, blank_row
 )
+from py.log_config import safe_select
 from py.paginator import TablePaginator
-
 
 # /show_table: pagination & sort for stats
 @app_commands.command(
@@ -42,7 +42,14 @@ async def show_table(
 
     # ── 3) Fetch all rows under correct client ────────────────────────────────
     client = admin_supabase if is_admin(user) else user_client_for(user.id)
-    rows = client.table("stats").select("*").execute().data or []
+    try:
+        rows = safe_select(client, "stats", "*")
+    except Exception:
+        return await interaction.followup.send(
+            "❌ Could not fetch data from Supabase. Check the logs for details.",
+            ephemeral=True
+        )
+
 
     # ── 4) Validate sort column ───────────────────────────────────────────────
     sort_by = sort_by.lower() if sort_by else None
