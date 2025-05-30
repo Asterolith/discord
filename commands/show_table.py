@@ -3,7 +3,7 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-from ..py.helpers import (
+from py.helpers import (
     is_admin, load_data, user_client_for, admin_supabase,
     ROWS_PER_PAGE, HEADER, SEP,
     format_row, blank_row, sort_data

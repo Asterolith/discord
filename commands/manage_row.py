@@ -2,7 +2,7 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-from ..py.helpers import is_admin, admin_supabase
+from py.helpers import is_admin, admin_supabase
 
 
 @app_commands.command(name="add_row", description="Add a new row (admin)")

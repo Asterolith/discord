@@ -1,6 +1,9 @@
 services:
   - type: web
     name: discord-bot
+    envVars:
+      - key: PYTHONPATH
+        value: .
     env: 
       - key: DIS_TOKEN
       - key: SUPABASE_URL

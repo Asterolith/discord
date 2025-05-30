@@ -1,8 +1,8 @@
-
+#_ commands/update_table.py
 import discord
 from discord import app_commands
 from discord.ext import commands
-from ..py.helpers import is_admin, admin_supabase, user_client_for
+from py.helpers import is_admin, admin_supabase, user_client_for
 
 # — update_table —
 @app_commands.command(name="update_table", description="Update a stats row (editor)")
