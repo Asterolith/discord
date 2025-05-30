@@ -179,14 +179,15 @@ async def delete_row(interaction: discord.Interaction, name: str):
     await interaction.followup.send(f"🗑️ Row for `{name}` deleted.")
 
 # —————————————————————————————
-# — view_editors — Admin only
 @tree.command(
     name="view_editors",
     description="List all current editors (admin only)"
 )
 async def view_editors(interaction: discord.Interaction):
     if not is_admin(interaction.user):
-        return await interaction.response.send_message("❌ You’re not authorized.", ephemeral=True)
+        await interaction.response.send_message("❌ You’re not authorized.", ephemeral=True)
+        return
+
     await interaction.response.defer(thinking=True)
 
     try:
@@ -212,7 +213,6 @@ async def view_editors(interaction: discord.Interaction):
             f"{r['discord_id']:<16} | {r['discord_name']}#{r['discriminator']:<8} | {ts}"
         )
 
-    # Discord code block with monospace font
     table = "```" + "\n".join(lines) + "```"
     await interaction.followup.send(table, ephemeral=True)
 
