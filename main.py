@@ -192,33 +192,41 @@ async def view_editors(interaction: discord.Interaction):
     # 2) Defer before the DB hit
     await interaction.response.defer(thinking=True)
 
-    # 3) Fetch & order in one go
+    # 3) Fetch all rows (no .order() here)
     try:
         res = admin_supabase.table("stats_editors_rights") \
                            .select("discord_id, discord_name, discriminator, added_at") \
-                           .order("added_at", ascending=False) \
                            .execute()
         rows = res.data or []
     except Exception as e:
         return await interaction.followup.send(f"❌ Failed to fetch editors: {e}", ephemeral=True)
 
-    # 4) Empty guard
+    # 4) Sort descending by ‘added_at’ in Python
+    try:
+        rows.sort(key=lambda r: r["added_at"], reverse=True)
+    except KeyError:
+        # if added_at missing, just leave as-is
+        pass
+
     if not rows:
         return await interaction.followup.send("ℹ️ No editors found.", ephemeral=True)
 
-    # 5) Build the table
+    # 5) Build a monospace table
     header = "ID               | Name#Discriminator | Added At (UTC)"
     sep    = "-" * len(header)
     lines  = [header, sep]
 
     for r in rows:
-        # parse timestamp safely
         ts = datetime.fromisoformat(r["added_at"]).strftime("%Y-%m-%d %H:%M")
-        lines.append(f"{r['discord_id']:<16} | {r['discord_name']}#{r['discriminator']:<8} | {ts}")
+        lines.append(
+            f"{r['discord_id']:<16} | "
+            f"{r['discord_name']}#{r['discriminator']:<8} | "
+            f"{ts}"
+        )
 
     table = "```" + "\n".join(lines) + "```"
 
-    # 6) Send as follow-up
+    # 6) Send it
     await interaction.followup.send(table, ephemeral=True)
 
 
