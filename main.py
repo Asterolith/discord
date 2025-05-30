@@ -187,6 +187,7 @@ async def delete_row(interaction: discord.Interaction, name: str):
 async def view_editors(interaction: discord.Interaction):
     if not is_admin(interaction.user):
         return await interaction.response.send_message("❌ You’re not authorized.", ephemeral=True)
+    await interaction.response.defer(thinking=True)
 
     try:
         res = admin_supabase.table("stats_editors_rights") \
@@ -215,7 +216,7 @@ async def view_editors(interaction: discord.Interaction):
 
     # Discord code block with monospace font
     table = "```" + "\n".join(lines) + "```"
-    await interaction.response.send_message(table, ephemeral=True)
+    await interaction.followup.send(table, ephemeral=True)
 
 
 # — add_editor — Admin only
@@ -226,6 +227,7 @@ async def view_editors(interaction: discord.Interaction):
 async def add_editor(interaction: discord.Interaction, member: discord.Member):
     if not is_admin(interaction.user):
         return await interaction.response.send_message("❌NOT authorized.", ephemeral=True)
+    await interaction.response.defer(thinking=True)
     
     try:
         # capture name + discriminator + timestamp
@@ -255,6 +257,7 @@ async def add_editor(interaction: discord.Interaction, member: discord.Member):
 async def remove_editor(interaction: discord.Interaction, member: discord.Member):
     if not is_admin(interaction.user):
         return await interaction.response.send_message("❌NOT authorized.", ephemeral=True)
+    await interaction.response.defer(thinking=True)
     
     try:
         res = admin_supabase.table("stats_editors_rights") \
@@ -275,10 +278,12 @@ async def remove_editor(interaction: discord.Interaction, member: discord.Member
 
 
 # —————————————————————————————
-@tree.command(name="ping", description="Ping the bot (everyone can use this)")
+@tree.command(name="ping", description="Check bot latency")
 async def ping(interaction: discord.Interaction):
+    # simply reply immediately
     latency_ms = round(bot.latency * 1000)
-    await interaction.followup.send(f"Pong! 🏓 {latency_ms}ms")
+    await interaction.response.send_message(f"Pong! 🏓 {latency_ms}ms")
+
 
 # —————————————————————————————
 # — Run bot in background & WSGI —
