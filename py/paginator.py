@@ -1,6 +1,6 @@
 # py/paginator.py
 import discord
-from discord import ui
+from discord import  ui
 from py.helpers import format_header, format_row, blank_row, sort_data, ROWS_PER_PAGE
 
 class TablePaginator(ui.View):
@@ -43,4 +43,10 @@ class TablePaginator(ui.View):
             
         block = '```css\n' + '\n'.join(lines) + '\n```'
         self.update_buttons()
-        await interaction.response.edit_message(content=block, view=self)
+
+         # Attempt to edit via interaction.response
+        try:
+            await interaction.response.edit_message(content=block, view=self)
+        except discord.errors.NotFound:
+            # fallback to followup if response not available
+            await interaction.followup.edit_message(message_id=interaction.message.id, content=block, view=self)
