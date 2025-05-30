@@ -72,8 +72,11 @@ async def show_table(interaction: discord.Interaction,
                      sort_by: str = None,
                      sort_desc: bool = True,
                      page: int = 1):
-    # Defer the response so Discord doesn’t timeout
-    await interaction.response.defer(thinking=True)
+    # Try to defer, but if it’s “unknown,” ignore it
+    try:
+        await interaction.response.defer(thinking=True)
+    except discord.errors.NotFound:
+        pass
 
     # Validate sort_by
     if sort_by and sort_by.lower() not in ('name', 'sing', 'dance', 'rally'):
