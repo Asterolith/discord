@@ -106,9 +106,14 @@ async def show_table(interaction: discord.Interaction,
         lines.append(blank_row())
     block = f"```css\n{chr(10).join(lines)}\n```"
 
-    # get total count for pagination buttons
-    all_rows = load_data()  # uses cache so it’s very cheap
-    view     = TablePaginator(all_rows, sort_by, sort_desc, page)
+    # full data for pagination controls:
+    if is_admin(interaction.user):
+        full_data = admin_supabase.table('stats').select('*').execute().data or []
+    else:
+        full_data = user_client_for(interaction.user.id).table('stats').select('*').execute().data or []
+
+    view = TablePaginator(full_data, sort_by, sort_desc, page)
+
     await interaction.followup.send(content=block, view=view)
 
 
