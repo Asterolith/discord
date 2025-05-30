@@ -26,7 +26,7 @@ async def show_table(
     page: int = 1
 ):
     # ── 1) Permission check ────────────────────────────────────────────────────
-    if not (is_admin(user) or is_editor(user.id)):
+    if not (is_admin(interaction.user) or is_editor(interaction.user.id)):
         return await interaction.response.send_message(
             "❌ You don’t have permission to view stats.",
             ephemeral=True
