@@ -10,6 +10,7 @@ from py.helpers import (
     user_client_for, admin_supabase,
     is_admin,
     ROWS_PER_PAGE, HEADER, SEP,
+    load_data,
     format_row, blank_row
 )
 from py.paginator import TablePaginator
@@ -105,7 +106,10 @@ async def show_table(interaction: discord.Interaction,
     # get total count for pagination buttons
     # you can either keep a cached `load_data` count or do a lightweight
     # count(*) query here, but for simplicity we can fetch all IDs once:
-    count = client.table('stats').select('name', {'count': 'exact'}).execute().count
+    resp = client.table('stats') \
+             .select('*', count='exact', head=True) \
+             .execute()
+    count = resp.count
     view = TablePaginator(count, sort_by, sort_desc, page)
     await interaction.followup.send(content=block, view=view)
 
