@@ -42,6 +42,9 @@ async def show_table(
 
     # ── 3) Fetch all rows under correct client ────────────────────────────────
     client = admin_supabase if is_admin(user) else user_client_for(user.id)
+    
+    print("[DEBUG] Supabase headers:", client._session.headers)
+
     try:
         rows = safe_select(client, "stats", "*")
     except Exception:

@@ -24,12 +24,16 @@ RALLY_WIDTH  = 7
 ROWS_PER_PAGE = 20
 
 # ─── Supabase Clients ────────────────────────────────────────────────────────────
+def user_client_for(discord_id: int) -> Client:
+    token = mint_discord_user_token(discord_id)
+    print(f"[DEBUG] Minted token for {discord_id}: {token[:20]}...")
+    return create_client(SUPABASE_URL, token)
+
 anon_supabase  = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 admin_supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+print("[DEBUG] admin_supabase is using SERVICE_KEY:", SUPABASE_SERVICE_KEY[:10], "...")
+print("[DEBUG] anon_supabase is using ANON_KEY:", SUPABASE_ANON_KEY[:10], "...")
 
-def user_client_for(discord_id: int) -> Client:
-    """Creates a Supabase client with a user-scoped JWT (authenticated role)."""
-    return create_client(SUPABASE_URL, mint_discord_user_token(discord_id))
 
 # ─── Auth / Admin Check ──────────────────────────────────────────────────────────
 # ADMIN_IDS = {762749123770056746}
