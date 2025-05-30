@@ -14,10 +14,13 @@ async def view_editors(interaction: discord.Interaction):
     # 1) Authorization
     if not is_admin(interaction.user):
         await interaction.response.send_message("❌ You’re not authorized.", ephemeral=True)
-        return
 
     # 2) Defer before the DB hit
-    await interaction.response.defer(thinking=True)
+    try:
+        await interaction.response.defer(thinking=True)
+    except discord.errors.NotFound:
+        # already deferred or too late; we'll just use followup
+        pass
 
     # 3) Fetch all rows (no .order() here)
     try:
@@ -30,7 +33,7 @@ async def view_editors(interaction: discord.Interaction):
 
     # 4) Sort descending by ‘added_at’ in Python
     try:
-        rows.sort(key=lambda r: r["added_at"], reverse=True)
+        rows.sort(key=lambda r: r.get("added_at", ""), reverse=True)
     except KeyError:
         # if added_at missing, just leave as-is
         pass
@@ -62,44 +65,56 @@ async def view_editors(interaction: discord.Interaction):
 )
 async def add_editor(interaction: discord.Interaction, member: discord.Member):
     if not is_admin(interaction.user):
-        return await interaction.response.send_message("❌NOT authorized.", ephemeral=True)
-    await interaction.response.defer(thinking=True)
-    
+        return await interaction.response.send_message(
+            "❌ You’re not authorized.", ephemeral=True
+        )
+
     try:
-        # capture name + discriminator + timestamp
-        payload = {
-            "discord_id": member.id,
-            "discord_name": member.name,
-            # "added_at" uses default NOW() in Postgres if not specified
-        }
-        res = admin_supabase.table("stats_editors_rights")\
-                            .insert(payload)\
+        await interaction.response.defer(thinking=True)
+    except discord.errors.NotFound:
+        pass
+
+    payload = {
+        "discord_id": member.id,
+        "discord_name": member.name
+    }
+    try:
+        res = admin_supabase.table("stats_editors_rights") \
+                            .insert(payload) \
                             .execute()
-        # if the insert returns no data, it failed
         if not res.data:
-            raise RuntimeError("Insert failed")
+            raise RuntimeError("No data returned")
     except Exception as e:
-        return await interaction.followup.send(f"❌ Failed to add editor: {e}")
-    
-    await interaction.followup.send(f"✅ {member.mention} can now view & update stats.", ephemeral=True)
+        return await interaction.followup.send(
+            f"❌ Failed to add editor: {e}", ephemeral=True
+        )
+
+    await interaction.followup.send(
+        f"✅ {member.mention} can now view & update stats.", ephemeral=True
+    )
 
 
-# — remove_editor — Admin only
+
 @app_commands.command(
     name="remove_editor",
     description="Revoke editor rights (admin only)"
 )
 async def remove_editor(interaction: discord.Interaction, member: discord.Member):
     if not is_admin(interaction.user):
-        return await interaction.response.send_message("❌NOT authorized.", ephemeral=True)
-    await interaction.response.defer(thinking=True)
-    
+        return await interaction.response.send_message(
+            "❌ You’re not authorized.", ephemeral=True
+        )
+
+    try:
+        await interaction.response.defer(thinking=True)
+    except discord.errors.NotFound:
+        pass
+
     try:
         res = admin_supabase.table("stats_editors_rights") \
                             .delete() \
                             .eq("discord_id", member.id) \
                             .execute()
-    # PostgREST returns an empty list if nothing was deleted
         if not res.data:
             return await interaction.followup.send(
                 f"❌ {member.mention} was not an editor.", ephemeral=True
@@ -109,7 +124,9 @@ async def remove_editor(interaction: discord.Interaction, member: discord.Member
             f"❌ Failed to remove editor: {e}", ephemeral=True
         )
 
-    await interaction.followup.send(f"✅ {member.mention} can no longer view & update stats.", ephemeral=True)
+    await interaction.followup.send(
+        f"✅ {member.mention} can no longer view & update stats.", ephemeral=True
+    )
 
 
 def setup(bot: commands.Bot):
