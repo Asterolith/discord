@@ -10,7 +10,7 @@ from py.helpers import (
     user_client_for, admin_supabase,
     is_admin,
     ROWS_PER_PAGE, HEADER, SEP,
-    load_data,
+    load_data, sort_data,
     format_row, blank_row
 )
 from py.paginator import TablePaginator
@@ -78,41 +78,34 @@ async def show_table(interaction: discord.Interaction,
     except discord.errors.NotFound:
         pass
 
-    # Validate sort_by
-    if sort_by and sort_by.lower() not in ('name', 'sing', 'dance', 'rally'):
+    # 2) Validate
+    sort_by = sort_by.lower() if sort_by else None
+    if sort_by and sort_by not in ('name','sing','dance','rally'):
         return await interaction.followup.send('❌ Invalid sort column')
 
-    # User-scoped client for RLS
+    # 3) Pull & sort locally
     if is_admin(interaction.user):
-        client = admin_supabase    # uses your service_role key, bypasses RLS
+        full = admin_supabase.table('stats').select('*').execute().data or []
     else:
-        client = user_client_for(interaction.user.id)
+        full = load_data()    # uses anon & cache
 
-    query = client.table('stats').select('*')
     if sort_by:
-        query = query.order(sort_by.lower(), not sort_desc)
+        full = sort_data(full, sort_by, sort_desc)
 
-    # Pagination
-    start = (page - 1) * ROWS_PER_PAGE
-    end = start + ROWS_PER_PAGE - 1
-    page_data = query.range(start, end).execute().data or []
+   # 4) Slice page
+    start = (page-1)*ROWS_PER_PAGE
+    page_data = full[start:start+ROWS_PER_PAGE]
     if not page_data:
         return await interaction.followup.send('❌ Page out of range')
 
-    # Build text block
+    # 5) Build text block
     lines = [HEADER, SEP]
-    for row in page_data:
-        lines.append(format_row(row))
-        lines.append(blank_row())
+    for r in page_data:
+        lines.append(format_row(r)); lines.append(blank_row())
     block = f"```css\n{chr(10).join(lines)}\n```"
 
-    # full data for pagination controls:
-    if is_admin(interaction.user):
-        full_data = admin_supabase.table('stats').select('*').execute().data or []
-    else:
-        full_data = user_client_for(interaction.user.id).table('stats').select('*').execute().data or []
-
-    view = TablePaginator(full_data, sort_by, sort_desc, page)
+    # 6) Build paginator view with the full list, so it knows max pages
+    view = TablePaginator(full, sort_by, sort_desc, page)
 
     try:
         await interaction.response.edit_message(content=block, view=view)
