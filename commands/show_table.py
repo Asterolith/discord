@@ -4,7 +4,7 @@ from discord.ext import commands
 from py.helpers import (
     is_admin, is_editor, user_client_for, admin_supabase,
     ROWS_PER_PAGE, HEADER, SEP,
-    SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY, JWT_SECRET, #import for DEBUG
+    SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY, JWT_SECRET, #import for DEBUG
     sort_data, format_row, blank_row
 )
 from py.log_config import safe_select
@@ -49,7 +49,7 @@ async def show_table(
     except Exception:
         headers = "<couldn't fetch headers>"
     print(f"[DEBUG show_table] using {'ADMIN' if is_admin(interaction.user) else 'USER'} client")
-    print("  SUPABASE_URL:", client._url)
+    print("  SUPABASE_URL:", SUPABASE_URL)
     print("  Authorization header:", headers.get("Authorization"))
     print("[DEBUG] Supabase headers:", client._session.headers)
 
