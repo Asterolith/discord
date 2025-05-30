@@ -34,6 +34,14 @@ ADMIN_IDS = {}
 def is_admin(user) -> bool:
     return user.id in ADMIN_IDS
 
+def is_editor(user_id: int) -> bool:
+    """Check table_editors_rights via anon client."""
+    res = anon_supabase.table("stats_editors_rights")\
+                    .select("*discord_id")\
+                    .eq("discord_id", user_id)\
+                    .execute()
+    return bool(res.data)
+
 def mint_discord_user_token(discord_id: int, ttl: int = 3600) -> str:
     """Mint a JWT token for Supabase RLS with 'discord_id' claim."""
     now = int(time.time())

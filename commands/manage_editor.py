@@ -1,7 +1,7 @@
 #_ commands/manage_editor.py
-import discord
 from datetime import datetime
-from discord import app_commands
+import discord
+from discord import app_commands, Interaction, Member
 from discord.ext import commands
 from py.helpers import is_admin, admin_supabase
 
@@ -10,104 +10,76 @@ from py.helpers import is_admin, admin_supabase
     name="view_editors",
     description="List all current editors (admin only)"
 )
-async def view_editors(interaction: discord.Interaction):
-    # 1) Authorization
+async def view_editors(interaction: Interaction):
     if not is_admin(interaction.user):
-        await interaction.response.send_message("❌ You’re not authorized.", ephemeral=True)
+        return await interaction.response.send_message("❌ You’re not authorized.", ephemeral=True)
 
-    # 2) Defer before the DB hit
+    # defer but ignore if already responded
     try:
-        await interaction.response.defer(thinking=True)
-    except discord.errors.NotFound:
-        # already deferred or too late; we'll just use followup
+        await interaction.response.defer(thinking=True, ephemeral=True)
+    except discord.errors.InteractionResponded:
         pass
 
-    # 3) Fetch all rows (no .order() here)
+    # fetch & sort
     try:
         res = admin_supabase.table("stats_editors_rights") \
                            .select("discord_id, discord_name, added_at") \
                            .execute()
         rows = res.data or []
+        rows.sort(key=lambda r: r["added_at"], reverse=True)
     except Exception as e:
         return await interaction.followup.send(f"❌ Failed to fetch editors: {e}", ephemeral=True)
-
-    # 4) Sort descending by ‘added_at’ in Python
-    try:
-        rows.sort(key=lambda r: r.get("added_at", ""), reverse=True)
-    except KeyError:
-        # if added_at missing, just leave as-is
-        pass
 
     if not rows:
         return await interaction.followup.send("ℹ️ No editors found.", ephemeral=True)
 
-    # 5) Build a monospace table
-    header = "ID               | Name | Added At (UTC)"
-    sep    = "-" * len(header)
-    lines  = [header, sep]
-
+    header = "ID               | Name               | Added At (UTC)"
+    sep = "-" * len(header)
+    lines = [header, sep]
     for r in rows:
-        ts = datetime.fromisoformat(r['added_at']).strftime("%Y-%m-%d %H:%M")
-        lines.append(
-            f"{r['discord_id']:<16} | {r['discord_name']:<32} | {ts}"
-        )
-
+        ts = datetime.fromisoformat(r["added_at"]).strftime("%Y-%m-%d %H:%M")
+        lines.append(f"{r['discord_id']:<16} | {r['discord_name']:<18} | {ts}")
     table = "```" + "\n".join(lines) + "```"
 
-    # 6) Send it
     await interaction.followup.send(table, ephemeral=True)
 
 
-# — add_editor — Admin only
 @app_commands.command(
     name="add_editor",
     description="Grant someone editor rights (admin only)"
 )
-async def add_editor(interaction: discord.Interaction, member: discord.Member):
+async def add_editor(interaction: Interaction, member: Member):
     if not is_admin(interaction.user):
-        return await interaction.response.send_message(
-            "❌ You’re not authorized.", ephemeral=True
-        )
-
+        return await interaction.response.send_message("❌ You’re not authorized.", ephemeral=True)
     try:
-        await interaction.response.defer(thinking=True)
-    except discord.errors.NotFound:
+        await interaction.response.defer(thinking=True, ephemeral=True)
+    except discord.errors.InteractionResponded:
         pass
 
-    payload = {
-        "discord_id": member.id,
-        "discord_name": member.name
-    }
     try:
         res = admin_supabase.table("stats_editors_rights") \
-                            .insert(payload) \
-                            .execute()
+                            .insert({
+                                "discord_id": member.id,
+                                "discord_name": member.name
+                            }).execute()
         if not res.data:
-            raise RuntimeError("No data returned")
+            raise RuntimeError("No rows inserted")
     except Exception as e:
-        return await interaction.followup.send(
-            f"❌ Failed to add editor: {e}", ephemeral=True
-        )
+        return await interaction.followup.send(f"❌ Failed to add editor: {e}", ephemeral=True)
 
-    await interaction.followup.send(
-        f"✅ {member.mention} can now view & update stats.", ephemeral=True
-    )
-
+    await interaction.followup.send(f"✅ {member.mention} can now view & update stats.", ephemeral=True)
 
 
 @app_commands.command(
     name="remove_editor",
     description="Revoke editor rights (admin only)"
 )
-async def remove_editor(interaction: discord.Interaction, member: discord.Member):
+async def remove_editor(interaction: Interaction, member: Member):
     if not is_admin(interaction.user):
-        return await interaction.response.send_message(
-            "❌ You’re not authorized.", ephemeral=True
-        )
-
+        return await interaction.response.send_message("❌ You’re not authorized.", ephemeral=True)
     try:
-        await interaction.response.defer(thinking=True)
-    except discord.errors.NotFound:
+        await interaction.response.defer(thinking=True, ephemeral=True)
+    except discord.errors.InteractionResponded:
         pass
 
     try:
@@ -116,20 +88,13 @@ async def remove_editor(interaction: discord.Interaction, member: discord.Member
                             .eq("discord_id", member.id) \
                             .execute()
         if not res.data:
-            return await interaction.followup.send(
-                f"❌ {member.mention} was not an editor.", ephemeral=True
-            )
+            return await interaction.followup.send(f"❌ {member.mention} was not an editor.", ephemeral=True)
     except Exception as e:
-        return await interaction.followup.send(
-            f"❌ Failed to remove editor: {e}", ephemeral=True
-        )
+        return await interaction.followup.send(f"❌ Failed to remove editor: {e}", ephemeral=True)
 
-    await interaction.followup.send(
-        f"✅ {member.mention} can no longer view & update stats.", ephemeral=True
-    )
+    await interaction.followup.send(f"✅ {member.mention} can no longer view & update stats.", ephemeral=True)
 
 
 def setup(bot: commands.Bot):
-    bot.tree.add_command(view_editors)
-    bot.tree.add_command(add_editor)
-    bot.tree.add_command(remove_editor)
+    for cmd in (view_editors, add_editor, remove_editor):
+        bot.tree.add_command(cmd)
