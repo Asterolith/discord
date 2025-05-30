@@ -1,5 +1,6 @@
 #_ commands/manage_editor.py
-import discord, datetime
+import discord
+from datetime import datetime
 from discord import app_commands
 from discord.ext import commands
 from py.helpers import is_admin, admin_supabase
