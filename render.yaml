@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: discord-bot
+    env: 
+      - key: DIS_TOKEN
+      - key: SUPABASE_URL
+      - key: SUPABASE_ANON_KEY
+      - key: SUPABASE_SERVICE_ROLE_KEY
+      - key: SUPABASE_JWT_SECRET
+    buildCommand: |
+      export PIP_CACHE_DIR=$HOME/.cache/pip
+      mkdir -p $PIP_CACHE_DIR
+      pip install -r requirements.txt
+    startCommand: gunicorn main:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
+    # you can also specify cacheDirectories, but pip-cache in $HOME works without it
