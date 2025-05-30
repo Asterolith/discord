@@ -4,6 +4,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from flask import Flask
+from datetime import datetime
 
 from py.helpers import (
     user_client_for, admin_supabase,
@@ -60,7 +61,7 @@ async def on_ready():
 # ————————————————————————————————
 # — Table stats —
 # /show_table: pagination & sort for stats
-@tree.command(name="show_table", description="Show table with sort & pagination")
+@tree.command(name="show_table", description="Show table with sort & pagination (editor)")
 @app_commands.describe(
     sort_by='name | sing | dance | rally',
     sort_desc='Descending order? (default True)',
@@ -106,7 +107,7 @@ async def show_table(interaction: discord.Interaction,
 
 
 # — update_table —
-@tree.command(name="update_table", description="Update a stats row")
+@tree.command(name="update_table", description="Update a stats row (editor)")
 @app_commands.describe(name='Entry name', sing='New sing value', dance='New dance value', rally='New rally value')
 async def update_table(interaction: discord.Interaction,
                        name: str,
@@ -134,7 +135,7 @@ async def update_table(interaction: discord.Interaction,
 
 
 # — add_row —
-@tree.command(name="add_row", description="Add a new row (admin only)")
+@tree.command(name="add_row", description="Add a new row (admin)")
 async def add_row(interaction: discord.Interaction,
                   name: str,
                   sing: int,
@@ -158,7 +159,7 @@ async def add_row(interaction: discord.Interaction,
 
 
 # — delete_row —
-@tree.command(name="delete_row", description="Delete a row (admin only)")
+@tree.command(name="delete_row", description="Delete a row (admin)")
 async def delete_row(interaction: discord.Interaction, name: str):
     if not is_admin(interaction.user):
         return await interaction.response.send_message("❌NOT authorized.")
@@ -178,25 +179,106 @@ async def delete_row(interaction: discord.Interaction, name: str):
     await interaction.followup.send(f"🗑️ Row for `{name}` deleted.")
 
 # —————————————————————————————
-# /add_editor & /remove_editor: admin only
-@tree.command(name="add_editor", description="Grant somebody editor rights")
+# — view_editors — Admin only
+@tree.command(
+    name="view_editors",
+    description="List all current editors (admin only)"
+)
+async def view_editors(interaction: discord.Interaction):
+    if not is_admin(interaction.user):
+        return await interaction.response.send_message("❌ You’re not authorized.", ephemeral=True)
+
+    try:
+        res = admin_supabase.table("stats_editors_rights") \
+                            .select("discord_id, discord_name, discriminator, added_at") \
+                            .order("added_at", {"ascending": False}) \
+                            .execute()
+        rows = res.data or []
+    except Exception as e:
+        return await interaction.response.send_message(
+            f"❌ Failed to fetch editors: {e}", ephemeral=True
+        )
+
+    if not rows:
+        return await interaction.response.send_message(
+            "ℹ️ No editors found.", ephemeral=True
+        )
+
+    # Build a simple code block table
+    lines = ["ID               | Name#Discriminator | Added At (UTC)"]
+    lines.append("-" * len(lines[0]))
+    for r in rows:
+        ts = datetime.fromisoformat(r["added_at"]).strftime("%Y-%m-%d %H:%M")
+        lines.append(
+            f"{r['discord_id']:<16} | {r['discord_name']}#{r['discriminator']:<8} | {ts}"
+        )
+
+    # Discord code block with monospace font
+    table = "```" + "\n".join(lines) + "```"
+    await interaction.response.send_message(table, ephemeral=True)
+
+
+# — add_editor — Admin only
+@tree.command(
+    name="add_editor",
+    description="Grant someone editor rights (admin only)"
+)
 async def add_editor(interaction: discord.Interaction, member: discord.Member):
     if not is_admin(interaction.user):
         return await interaction.response.send_message("❌NOT authorized.", ephemeral=True)
-    # service-role client bypasses RLS on table_editors
-    admin_supabase.table('table_editors').insert({'discord_id': member.id}).execute()
-
-    await interaction.followup.send(f"✅ {member.mention} can now view & update stats.", ephemeral=True)
     
+    try:
+        # capture name + discriminator + timestamp
+        payload = {
+            "discord_id": member.id,
+            "discord_name": member.name,
+            "discriminator": member.discriminator,
+            # "added_at" uses default NOW() in Postgres if not specified
+        }
+        res = admin_supabase.table("stats_editors_rights")\
+                            .insert(payload)\
+                            .execute()
+        # if the insert returns no data, it failed
+        if not res.data:
+            raise RuntimeError("Insert failed")
+    except Exception as e:
+        return await interaction.followup.send(f"❌ Failed to add editor: {e}")
+    
+    await interaction.followup.send(f"✅ {member.mention} can now view & update stats.", ephemeral=True)
 
-@tree.command(name="remove_editor", description="Revoke editor rights")
+
+# — remove_editor — Admin only
+@tree.command(
+    name="remove_editor",
+    description="Revoke editor rights (admin only)"
+)
 async def remove_editor(interaction: discord.Interaction, member: discord.Member):
     if not is_admin(interaction.user):
         return await interaction.response.send_message("❌NOT authorized.", ephemeral=True)
-    admin_supabase.table("table_editors").delete().eq("discord_id", member.id).execute()
+    
+    try:
+        res = admin_supabase.table("stats_editors_rights") \
+                            .delete() \
+                            .eq("discord_id", member.id) \
+                            .execute()
+    # PostgREST returns an empty list if nothing was deleted
+        if not res.data:
+            return await interaction.followup.send(
+                f"❌ {member.mention} was not an editor.", ephemeral=True
+            )
+    except Exception as e:
+        return await interaction.followup.send(
+            f"❌ Failed to remove editor: {e}", ephemeral=True
+        )
 
     await interaction.followup.send(f"✅ {member.mention} can no longer view & update stats.", ephemeral=True)
 
+
+# —————————————————————————————
+@tree.command(name="ping", description="Ping the bot (everyone can use this)")
+async def ping(interaction: discord.Interaction):
+    latency_ms = round(bot.latency * 1000)
+    await interaction.followup.send(f"Pong! 🏓 {latency_ms}ms")
 
 # —————————————————————————————
 # — Run bot in background & WSGI —

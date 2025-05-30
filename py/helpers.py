@@ -29,7 +29,7 @@ def user_client_for(discord_id: int) -> Client:
     return create_client(SUPABASE_URL, mint_discord_user_token(discord_id))
 
 # ─── Auth / Admin Check ──────────────────────────────────────────────────────────
-ADMIN_IDS = {762749123770056746, 1330770994138447892}
+ADMIN_IDS = {762749123770056746}
 
 def is_admin(user) -> bool:
     return user.id in ADMIN_IDS
