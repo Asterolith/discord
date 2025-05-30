@@ -104,13 +104,8 @@ async def show_table(interaction: discord.Interaction,
     block = f"```css\n{chr(10).join(lines)}\n```"
 
     # get total count for pagination buttons
-    # you can either keep a cached `load_data` count or do a lightweight
-    # count(*) query here, but for simplicity we can fetch all IDs once:
-    resp = client.table('stats') \
-             .select('*', count='exact', head=True) \
-             .execute()
-    count = resp.count
-    view = TablePaginator(count, sort_by, sort_desc, page)
+    all_rows = load_data()  # uses cache so it’s very cheap
+    view     = TablePaginator(all_rows, sort_by, sort_desc, page)
     await interaction.followup.send(content=block, view=view)
 
 
