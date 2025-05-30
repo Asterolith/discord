@@ -51,7 +51,6 @@ def is_editor(user_id: int) -> bool:
     return bool(res.data)
 
 def mint_discord_user_token(discord_id: int, ttl: int = 3600) -> str:
-    """Mint a JWT token for Supabase RLS with 'discord_id' claim."""
     now = int(time.time())
     payload = {
         "iat": now,
@@ -61,7 +60,9 @@ def mint_discord_user_token(discord_id: int, ttl: int = 3600) -> str:
         "role": "authenticated",
         "discord_id": discord_id,
     }
-    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    print(f"[DEBUG] Minted JWT for {discord_id}: {token[:40]}…")  # log first 40 chars
+    return token
 
 # ─── Data I/O ─────────────────────────────────────────────────────────────────────
 _cache = {"data": None, "timestamp": 0}

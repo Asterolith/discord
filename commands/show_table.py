@@ -39,43 +39,19 @@ async def show_table(
         # if already acknowledged, ignore
         pass
 
-    # ── 3) Fetch all rows under correct client ────────────────────────────────
-    client = admin_supabase if is_admin(interaction.user) else user_client_for(interaction.user.id)
-
-    # 2) DEBUG: print out the headers your client will send
-    try:
-        session = client._session  # httpx.Session under the hood
-        headers = dict(session.headers)
-    except Exception:
-        headers = "<couldn't fetch headers>"
-    print(f"[DEBUG show_table] using {'ADMIN' if is_admin(interaction.user) else 'USER'} client")
-    print("  SUPABASE_URL:", SUPABASE_URL)
-    print("  Authorization header:", headers.get("Authorization"))
-    print("[DEBUG] Supabase headers:", client._session.headers)
-
-    # 3) If using a user‐scoped client, also show the first/last bits of the JWT
-    if not is_admin(interaction.user):
-        token = headers.get("Authorization", "").split("Bearer ")[-1]
-        print(f"  user JWT (first/last 8 chars): {token[:8]}…{token[-8:]}")
-
-    # 4) Now attempt the actual query, but catch the raw response
-    try:
-        rows = client.table("stats").select("*").execute().data or []
-    except Exception as e:
-        # dump the raw HTTP text if possible
-        try:
-            resp = e.args[0]  # the PostgREST APIError dict
-            print("[DEBUG show_table] raw error payload:", resp)
-        except:
-            pass
-        await interaction.followup.send("❌ Could not fetch data from Supabase. Check the logs for details.")
-        return
-    
-
     # ── 4) Validate sort column ───────────────────────────────────────────────
     sort_by = sort_by.lower() if sort_by else None
     if sort_by and sort_by not in ("name", "sing", "dance", "rally"):
         return await interaction.followup.send("❌ Invalid sort column")
+    
+
+    # 4) Fetch rows (admin bypasses RLS)
+    if is_admin(interaction.user):
+        rows = admin_supabase.table('stats').select('*').execute().data or []
+    else:
+        client = user_client_for(interaction.user.id)
+        rows = client.table('stats').select('*').execute().data or []
+    
 
     # ── 5) Sort & paginate in Python ──────────────────────────────────────────
     if sort_by:
