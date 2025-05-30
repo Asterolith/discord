@@ -1,14 +1,11 @@
-#_ commands/ping.py
-import discord
-from discord.ext import commands
+# commands/ping.py
+from discord import app_commands, Interaction
 
-bot = commands.Bot(command_prefix="!")
+@app_commands.command(name="ping", description="Check bot latency")
+async def ping(interaction: Interaction):
+    # use interaction.client instead of a fresh bot
+    latency_ms = round(interaction.client.latency * 1000)
+    await interaction.response.send_message(f"Pong! 🏓 {latency_ms}ms")
 
-@bot.tree.command(name="ping", description="Check bot latency")
-async def ping(interaction: discord.Interaction):
-    # simply reply immediately
-    await interaction.response.send_message(f"Pong! 🏓 {round(bot.latency*1000)}ms")
-
-
-def setup(bot: commands.Bot):
+def setup(bot):
     bot.tree.add_command(ping)
