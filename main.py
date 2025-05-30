@@ -90,7 +90,7 @@ async def show_table(interaction: discord.Interaction,
 
     query = client.table('stats').select('*')
     if sort_by:
-        query = query.order(sort_by.lower(), ascending=not sort_desc)
+        query = query.order(sort_by.lower(), not sort_desc, nulls_first=True)
 
     # Pagination
     start = (page - 1) * ROWS_PER_PAGE
