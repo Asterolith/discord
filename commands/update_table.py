@@ -2,6 +2,8 @@
 from discord import app_commands, Interaction
 from discord.ext import commands
 from py.helpers import is_admin, is_editor, admin_supabase, user_client_for
+from py.log_config import logger, safe_update
+from postgrest.exceptions import APIError
 
 @app_commands.command(
     name="update_table",
@@ -44,12 +46,14 @@ async def update_table(
 
     # ── 5) Execute update ─────────────────────────────────────────────────────
     try:
-        res = client.table("stats").update(payload).eq("name", name).execute()
-    except Exception as e:
-        return await interaction.followup.send(f"❌ Update failed: {e}")
+        data = safe_update(client, 'stats', payload, {"name": name})
+    except APIError:
+        return await interaction.followup.send(
+            "❌ Could not update row. Check logs for details."
+        )
 
     # ── 6) Check if anything changed ──────────────────────────────────────────
-    if not (res.data and len(res.data) > 0):
+    if not data:
         return await interaction.followup.send(f"❌ No entry found for `{name}`")
 
     # ── 7) Acknowledge ─────────────────────────────────────────────────────────
