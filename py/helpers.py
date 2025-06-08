@@ -67,13 +67,20 @@ def mint_discord_user_token(discord_id: int, ttl: int = 3600) -> str:
 
 
 def user_client_for(discord_id: int) -> Client:
-    anon_client = create_client(SUPABASE_URL, ANON_KEY)
+    """
+    Create a Supabase client that uses the ANON_KEY plus a
+    Bearer <user-JWT> header, so RLS sees your discord_id claim.
+    """
     jwt = mint_discord_user_token(discord_id)
-    # add both apikey and Bearer JWT
-    anon_client.postgrest.client.session.headers.update({
-      "Authorization": f"Bearer {jwt}"
-    })
-    return anon_client
+    return create_client(
+        SUPABASE_URL,
+        ANON_KEY,
+        {
+            "headers": {
+                "Authorization": f"Bearer {jwt}"
+            }
+        }
+    )
 
 
 # ─── In-memory caching ─────────────────────────────────────────────────────────
