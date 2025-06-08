@@ -65,7 +65,10 @@ async def show_table(
     for r in page_data:
         lines.append(format_row(r))
         lines.append(blank_row())
-    block = f"```css\n{chr(10).join(lines)}\n```"
+
+    text = "\n".join(lines)
+    block = f"```css\n{text}\n```"
+    # block = f"```css\n{chr(10).join(lines)}\n```"
 
     # Paginator
     view = TablePaginator(rows, sort_by, sort_desc, page)
