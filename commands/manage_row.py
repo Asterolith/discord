@@ -1,6 +1,5 @@
 # commands/manage_row.py
 
-import discord
 from discord import app_commands, Interaction, errors
 from discord.ext import commands
 

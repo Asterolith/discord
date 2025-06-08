@@ -1,6 +1,6 @@
 # py/helpers.py
-import os, time, jwt
-from supabase import create_client, Client
+import os, time
+from supabase import create_client
 from py.log_config import logger
 
 
@@ -33,8 +33,25 @@ HEADER = (
 SEP = '-' * len(HEADER)
 
 # ─── Auth / Admin Check ──────────────────────────────────────────────────────────
-# ADMIN_IDS = {762749123770056746}
-ADMIN_IDS = set()  # fill with discord user IDs for admin
+def load_admin_ids(path="data/adms.txt"):
+    ids = set()
+    try:
+        with open(path, "r") as f:
+            for line in f:
+                text = line.strip()
+                if not text:
+                    continue
+                try:
+                    ids.add(int(text))
+                except ValueError:
+                    # Skip lines that aren't valid integers
+                    continue
+    except FileNotFoundError:
+        pass
+    return ids
+
+# Now ADMIN_IDS is initialized from that file:
+ADMIN_IDS = load_admin_ids()
 
 
 def is_admin(user) -> bool:

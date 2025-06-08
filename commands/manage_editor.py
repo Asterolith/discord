@@ -1,7 +1,6 @@
 # commands/manage_editor.py
 
 from datetime import datetime
-import discord
 from discord import app_commands, Interaction, Member, errors
 from discord.ext import commands
 

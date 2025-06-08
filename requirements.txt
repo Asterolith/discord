@@ -3,5 +3,5 @@ discord.py
 flask
 gunicorn
 supabase
-PyJWT
+# PyJWT
 requests>=2.28.0
