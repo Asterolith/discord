@@ -1,10 +1,13 @@
 # web.py:  tiny Flask health endpoint + starts the bot
-import os, threading
+
+import os
+import threading
 from flask import Flask
 from bot import bot
-
+from py.log_config import logger
 
 app = Flask(__name__)
+
 
 @app.route('/')
 def index():
@@ -32,8 +35,11 @@ def index():
 
 
 if __name__ == "__main__":
+    # Start the bot in a background thread
     threading.Thread(
-        target=lambda: bot.run(os.environ['DIS_TOKEN']),
+        target=lambda: bot.run(os.environ["DIS_TOKEN"]),
         daemon=True
     ).start()
+
+    logger.info("🌐 Flask web server starting…")
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))

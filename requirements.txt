@@ -1,8 +1,7 @@
-
-# requirements.txt
+#_requirements.txt
 discord.py
 flask
 gunicorn
 supabase
 PyJWT
-datetime
+requests>=2.28.0

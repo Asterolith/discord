@@ -1,66 +1,57 @@
 # py/log_config.py
 import logging
 from logging.handlers import RotatingFileHandler
-from postgrest.exceptions import APIError
+from logging import StreamHandler
 
-# —————————————————————————
-# Configure the root logger (you can adjust level here)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)-4s] %(name)s:%(lineno)d — %(message)s",
-    datefmt="%Y.%m.%d %H:%M:%S",
+# Optional Logflare integration
+try:
+    from py.logflare_handler import LogflareHandler
+    _has_logflare = True
+except ImportError:
+    _has_logflare = False
+
+
+# ─── 1) Configure root logger to INFO level (change to DEBUG if needed) ───
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+
+# ─── 2) Console Handler ───
+console_handler = StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_fmt = logging.Formatter(
+    "%(asctime)s [%(levelname)-5s] %(name)s:%(funcName)s:%(lineno)d — %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
+console_handler.setFormatter(console_fmt)
+root_logger.addHandler(console_handler)
+
+# ─── 3) Rotating File Handler ───
+file_handler = RotatingFileHandler(
+    filename="discord_bot.log", maxBytes=5_000_000, backupCount=3, encoding="utf-8"
+)
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(console_fmt)
+root_logger.addHandler(file_handler)
+
+# ─── 4) Optional: Logflare Handler ───
+# Wrap in try/except so startup won’t fail if Logflare credentials are missing.
+if _has_logflare:
+    try:
+        lf_handler = LogflareHandler()
+        lf_handler.setLevel(logging.INFO)
+        root_logger.addHandler(lf_handler)
+    except Exception as exc:
+        root_logger.warning("Failed to initialize Logflare handler: %s", exc)
+# try:
+#     logflare_handler = LogflareHandler()
+#     logflare_handler.setLevel(logging.INFO)
+#     # If you prefer a tighter format for Logflare, change this formatter:
+#     logflare_fmt = logging.Formatter("%(asctime)s [%(levelname)-5s] %(name)s: %(message)s")
+#     logflare_handler.setFormatter(logflare_fmt)
+#     root_logger.addHandler(logflare_handler)
+# except Exception as e:
+#     root_logger.warning("Could not initialize LogflareHandler: %s", e)
+
+# ─── 5) Expose a module‐level logger for “app code” ───
 logger = logging.getLogger(__name__)
 
-
-# Rotate on disk as well (optional on Render)
-handler = RotatingFileHandler(
-    filename="app.log", maxBytes=10_000_000, backupCount=3, encoding="utf-8"
-)
-handler.setLevel(logging.INFO)
-handler.setFormatter(logging.Formatter(
-    "%(asctime)s [%(levelname)-4s] %(name)s:%(lineno)d — %(message)s",
-    datefmt="%Y.%m.%d %H:%M:%S"
-))
-logger.addHandler(handler)
-
-
-def safe_select(client, table: str, *columns, **options):
-    """
-    Fetch `columns` from `table`, catch & log any Supabase/APIError,
-    then re-raise for the caller to handle gracefully.
-    """
-    try:
-        resp = client.table(table).select(*columns, **options).execute()
-        return resp.data or []
-    except APIError as err:
-        # err.args[0] is that JSON dict with message/code/hint
-        logger.error("Supabase SELECT on %s failed: %s", table, err.args[0])
-        raise
-
-
-def safe_update(client, table: str, payload: dict, match: dict):
-    try:
-        resp = client.table(table).update(payload).match(match).execute()
-        return resp.data or []
-    except APIError as err:
-        logger.error("Supabase UPDATE on %s failed: %s", table, err.args[0])
-        raise
-
-
-def safe_insert(client, table: str, payload: dict):
-    try:
-        resp = client.table(table).insert(payload).execute()
-        return resp.data or []
-    except APIError as err:
-        logger.error("Supabase INSERT on %s failed: %s", table, err.args[0])
-        raise
-
-
-def safe_delete(client, table: str, match: dict):
-    try:
-        resp = client.table(table).delete().match(match).execute()
-        return resp.data or []
-    except APIError as err:
-        logger.error("Supabase DELETE on %s failed: %s", table, err.args[0])
-        raise
