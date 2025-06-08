@@ -18,7 +18,7 @@ class LogflareHandler(Handler):
         super().__init__()
         self.api_key    = os.getenv("LOGFLARE_API_KEY")
         self.source_id  = os.getenv("LOGFLARE_SOURCE_ID")
-        if not self.api_key or not self.source_id:
+        if not self.api_key or not selff.source_id:
             raise RuntimeError("LOGFLARE_API_KEY and LOGFLARE_SOURCE_ID must be set")
 
         self.endpoint = (
@@ -75,15 +75,20 @@ class LogflareHandler(Handler):
             "funcName": record.funcName,
             "line_no": record.lineno,
         }
-        if record.exc_info:
-            meta["exc_info"] = self.formatException(record.exc_info)
 
-        return {
+        payload = {
             "timestamp": timestamp,
             "level": record.levelname,
             "message": message,
             "meta": meta,
         }
+
+        if record.exc_info:
+            # use a temporary Formatter just for exceptions
+            exc_text = logging.Formatter().formatException(record.exc_info)
+            payload["meta"]["exc_info"] = exc_text
+
+        return payload
 
 
     def _post(self, payload: dict):
