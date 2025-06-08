@@ -2,21 +2,21 @@
 import os, time, jwt
 from supabase import create_client, Client
 from py.log_config import logger
-from types import SimpleNamespace
+
 
 # ─── Config ─────────────────────────────────────────────────────────────────────
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
-SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
+SUPABASE_URL    = os.getenv("SUPABASE_URL")
+SB_ANON_KEY     = os.getenv("SUPABASE_ANON_KEY")
+SB_SERVICE_KEY  = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
-if not all([SUPABASE_URL, ANON_KEY, SERVICE_KEY, JWT_SECRET]):
+
+if not all([SUPABASE_URL, SB_ANON_KEY, SB_SERVICE_KEY]):
     logger.error("Missing required Supabase or JWT environment variables")
     raise RuntimeError("Missing Supabase or JWT environment variables")
 
 # ─── Supabase clients ─────────────────────────────────────────────────────────
-anon_supabase = create_client(SUPABASE_URL, ANON_KEY)
-admin_supabase = create_client(SUPABASE_URL, SERVICE_KEY)
+anon_supabase = create_client(SUPABASE_URL, SB_ANON_KEY)
+admin_supabase = create_client(SUPABASE_URL, SB_SERVICE_KEY)
 
 # ─── Formatting constants ─────────────────────────────────────────────────────
 NAME_WIDTH = 15
@@ -54,23 +54,17 @@ def is_editor(user_id: int) -> bool:
         return False
 
 # ─── JWT minting & user client ─────────────────────────────────────────────────
-def mint_discord_user_token(discord_id: int, ttl: int = 3600) -> str:
-    now = int(time.time())
-    payload = {
-        "iat": now,
-        "exp": now + ttl,
-        "sub": str(discord_id),
-        "aud": "authenticated",
-        "role": "authenticated",
-        "discord_id": discord_id
-    }
-    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
-
-
-def user_client_for(discord_id: int) -> Client:
-    token = mint_discord_user_token(discord_id)
-    opts = SimpleNamespace(headers={"Authorization": f"Bearer {token}"})
-    return create_client(SUPABASE_URL, ANON_KEY, opts)
+# def mint_discord_user_token(discord_id: int, ttl: int = 3600) -> str:
+#     now = int(time.time())
+#     payload = {
+#         "iat": now,
+#         "exp": now + ttl,
+#         "sub": str(discord_id),
+#         "aud": "authenticated",
+#         "role": "authenticated",
+#         "discord_id": discord_id
+#     }
+#     return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
 
 # ─── In-memory caching ─────────────────────────────────────────────────────────

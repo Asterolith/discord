@@ -1,6 +1,6 @@
 from discord import app_commands, Interaction, errors
 from discord.ext import commands
-from py.helpers import is_admin, is_editor, user_client_for, admin_supabase
+from py.helpers import is_admin, is_editor, admin_supabase
 from py.helpers import ROWS_PER_PAGE, HEADER, SEP, sort_data, format_row, blank_row
 from py.log_config import logger
 from py.paginator import TablePaginator
@@ -40,7 +40,7 @@ async def show_table(
         return await interaction.followup.send("❌ Invalid sort column")
 
     # Choose client
-    client = admin_supabase if is_admin(user) else user_client_for(user.id)
+    client = admin_supabase
 
     # Fetch data
     try:

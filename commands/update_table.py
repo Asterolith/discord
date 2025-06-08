@@ -1,6 +1,6 @@
 from discord import app_commands, Interaction
 from discord.ext import commands
-from py.helpers import is_admin, is_editor, user_client_for, admin_supabase
+from py.helpers import is_admin, is_editor, admin_supabase
 from py.log_config import logger
 
 @app_commands.command(
@@ -33,7 +33,7 @@ async def update_table(
     await interaction.response.defer(thinking=True)
 
     # Choose client
-    client = admin_supabase if is_admin(user) else user_client_for(user.id)
+    client = admin_supabase
 
     # Build payload
     payload = {k: v for k, v in {"sing": sing, "dance": dance, "rally": rally}.items() if v is not None}

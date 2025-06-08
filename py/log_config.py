@@ -54,4 +54,3 @@ if _has_logflare:
 
 # ─── 5) Expose a module‐level logger for “app code” ───
 logger = logging.getLogger(__name__)
-
