@@ -56,7 +56,7 @@ class TablePaginator(ui.View):
             lines.append(blank_row())
         content = f"```css\n{'\n'.join(lines)}\n```"
             
-        block = '```css\n' + '\n'.join(lines) + '\n```'
+        # block = '```css\n' + '\n'.join(lines) + '\n```'
        
         # Update navigation buttons
         self._update_button_states()
