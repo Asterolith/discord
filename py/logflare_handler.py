@@ -18,7 +18,7 @@ class LogflareHandler(Handler):
         super().__init__()
         self.api_key    = os.getenv("LOGFLARE_API_KEY")
         self.source_id  = os.getenv("LOGFLARE_SOURCE_ID")
-        if not self.api_key or not selff.source_id:
+        if not self.api_key or not self.source_id:
             raise RuntimeError("LOGFLARE_API_KEY and LOGFLARE_SOURCE_ID must be set")
 
         self.endpoint = (

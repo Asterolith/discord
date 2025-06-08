@@ -2,6 +2,7 @@
 import os, time, jwt
 from supabase import create_client, Client
 from py.log_config import logger
+from types import SimpleNamespace
 
 # ─── Config ─────────────────────────────────────────────────────────────────────
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -67,20 +68,9 @@ def mint_discord_user_token(discord_id: int, ttl: int = 3600) -> str:
 
 
 def user_client_for(discord_id: int) -> Client:
-    """
-    Create a Supabase client that uses the ANON_KEY plus a
-    Bearer <user-JWT> header, so RLS sees your discord_id claim.
-    """
-    jwt = mint_discord_user_token(discord_id)
-    return create_client(
-        SUPABASE_URL,
-        ANON_KEY,
-        {
-            "headers": {
-                "Authorization": f"Bearer {jwt}"
-            }
-        }
-    )
+    token = mint_discord_user_token(discord_id)
+    opts = SimpleNamespace(headers={"Authorization": f"Bearer {token}"})
+    return create_client(SUPABASE_URL, ANON_KEY, opts)
 
 
 # ─── In-memory caching ─────────────────────────────────────────────────────────
