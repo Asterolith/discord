@@ -66,6 +66,7 @@ async def show_table(
         lines.append(format_row(r))
         lines.append(blank_row())
 
+    # **fixed**: assemble the block without a backslash inside the {}
     text = "\n".join(lines)
     block = f"```css\n{text}\n```"
     # block = f"```css\n{chr(10).join(lines)}\n```"
