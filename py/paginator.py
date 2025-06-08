@@ -54,7 +54,9 @@ class TablePaginator(ui.View):
         for r in page_rows:
             lines.append(format_row(r))
             lines.append(blank_row())
-        content = f"```css\n{'\n'.join(lines)}\n```"
+        
+        text = "\n".join(lines)
+        block = f"```css\n{text}\n```"
             
         # block = '```css\n' + '\n'.join(lines) + '\n```'
        
@@ -63,10 +65,10 @@ class TablePaginator(ui.View):
 
         # Try to edit interaction, fallback to followup
         try:
-            await interaction.response.edit_message(content=content, view=self)
+            await interaction.response.edit_message(content=block, view=self)
         except discord.errors.NotFound:
             await interaction.followup.edit_message(
                 message_id=interaction.message.id,
-                content=content,
+                content=block,
                 view=self
             )
