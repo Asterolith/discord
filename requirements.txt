@@ -3,7 +3,6 @@ discord.py
 requests
 supabase
 
-flask
-gunicorn
+aiohttp
 
 # PyJWT
