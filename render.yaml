@@ -2,11 +2,7 @@
 services:
   - type: web
     name: discord-bot
-    # Python needs to know where to find your modules:
     envVars:
-      - key: PYTHONPATH
-        value: .
-    env:
       - key: DIS_TOKEN
       - key: SUPABASE_URL
       - key: SUPABASE_ANON_KEY
@@ -24,10 +20,4 @@ services:
       mkdir -p $PIP_CACHE_DIR
       pip install -r requirements.txt
 
-    startCommand: >
-      gunicorn bot:app
-        --bind 0.0.0.0:$PORT
-        --workers 1
-        --worker-class uvicorn.workers.UvicornWorker
-        --timeout 120
-
+    startCommand: gunicorn web:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120
