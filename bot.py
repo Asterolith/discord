@@ -2,13 +2,12 @@
 import os
 import signal
 import asyncio
-import logging
 
 import discord
 from discord.ext import commands
 from aiohttp import web
 
-from py.log_config import root_logger as logger
+from py.log_config import logger
 from commands.show_table    import setup as setup_show
 from commands.update_table  import setup as setup_update
 from commands.manage_row    import setup as setup_row
