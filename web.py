@@ -1,4 +1,4 @@
-# web.py:  tiny Flask health endpoint + starts the bot
+# web.py:  tiny Flask health endpoint + starts the bot -- OBSOLETE
 
 import os
 import time

@@ -1,10 +1,12 @@
+#_render.yaml
 services:
   - type: web
     name: discord-bot
     # Python needs to know where to find your modules:
-    env:
+    envVars:
       - key: PYTHONPATH
         value: .
+    env:
       - key: DIS_TOKEN
       - key: SUPABASE_URL
       - key: SUPABASE_ANON_KEY
@@ -19,6 +21,7 @@ services:
 
     buildCommand: |
       export PIP_CACHE_DIR=$HOME/.cache/pip
+      mkdir -p $PIP_CACHE_DIR
       pip install -r requirements.txt
 
-    startCommand: gunicorn web:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120
+    startCommand: python bot.py

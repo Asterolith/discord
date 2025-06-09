@@ -1,28 +1,30 @@
-#_bot.py: core Discord bot, loads commands
+# bot.py
 
 import os
+import asyncio
 import logging
+
 import discord
 from discord.ext import commands
+from aiohttp import web
 
-# Initialize logging (config in py/log_config)
+# Logging initialisieren (py/log_config konfiguriert root_logger)
 from py.log_config import root_logger as logger
+
 logger.info("Discord bot starting…")
 logger.info("🐬 Logflare integration is live!")
 
-# Import command modules
-from commands.show_table import setup as setup_show
-from commands.update_table import setup as setup_update
-from commands.manage_row import setup as setup_row
+# Slash-Command Module
+from commands.show_table    import setup as setup_show
+from commands.update_table  import setup as setup_update
+from commands.manage_row    import setup as setup_row
 from commands.manage_editor import setup as setup_editor
-from commands.ping import setup as setup_ping
+from commands.ping          import setup as setup_ping
 
-
-# Create bot instance
+# ─── Discord Bot Setup ───────────────────────────────────────────────────────
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Register slash commands
 def register_commands():
     setup_show(bot)
     setup_update(bot)
@@ -32,19 +34,32 @@ def register_commands():
 
 register_commands()
 
-
 @bot.event
 async def on_ready():
-    # Sync commands on startup
     await bot.tree.sync()
     logger.info(f"✅ Bot ready: {bot.user} ({bot.user.id})")
 
-if __name__ == "__main__":
-    token = os.getenv("DIS_TOKEN")
-    if not token:
-        logger.error("DIS_TOKEN missing")
-        raise RuntimeError("DIS_TOKEN missing")
-    bot.run(token)
+# ─── Health-Endpoint mit aiohttp ─────────────────────────────────────────────
+async def handle_health(request: web.Request) -> web.Response:
+    return web.Response(text="OK", status=200)
 
-# Export bot for web boot
-__all__ = ["bot"]
+async def start_webserver():
+    app = web.Application()
+    app.add_routes([web.get("/", handle_health)])
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.getenv("PORT", 5000))
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    logger.info(f"🌐 Webserver started on port {port}")
+
+# ─── Main: Web + Bot parallel ────────────────────────────────────────────────
+async def main():
+    await start_webserver()           # Health-Check starten
+    await bot.start(os.environ["DIS_TOKEN"])  # Discord-Bot
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("Shutting down…")

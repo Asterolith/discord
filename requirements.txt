@@ -1,7 +1,6 @@
 #_requirements.txt
 discord.py
-flask
-gunicorn
+aiohttp
 supabase
 # PyJWT
 requests>=2.28.0
