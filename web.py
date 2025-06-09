@@ -1,21 +1,21 @@
 # web.py:  tiny Flask health endpoint + starts the bot -- OBSOLETE
 # web.py
-import os, threading
-from flask import Flask
-from bot import bot
+# import os, threading
+# from flask import Flask
+# from bot import bot
 
 # ── Spawn the Discord bot immediately on import ────────────────────────────────
-threading.Thread(
-    target=lambda: bot.run(os.environ["DIS_TOKEN"]),
-    daemon=True
-).start()
+# threading.Thread(
+#     target=lambda: bot.run(os.environ["DIS_TOKEN"]),
+#     daemon=True
+# ).start()
 
 # ── Flask health‐check app ─────────────────────────────────────────────────────
-app = Flask(__name__)
+# app = Flask(__name__)
 
-@app.route("/", methods=["GET", "HEAD"])
-def health():
-    return "OK", 200
+# @app.route("/", methods=["GET", "HEAD"])
+# def health():
+#     return "OK", 200
 
 
 # # 1) A tiny WSGI filter that catches HEAD/GET on “/” and responds directly, bypassing Flask entirely.

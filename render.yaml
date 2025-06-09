@@ -12,13 +12,13 @@ services:
       - key: LOGFLARE_SOURCE_ID
 
     # Enable and persist pip cache across builds:
-    cacheDirectories:
-      - $HOME/.cache/pip
+    # cacheDirectories:
+    #   - $HOME/.cache/pip
 
-    buildCommand: |
-      export PIP_CACHE_DIR=$HOME/.cache/pip
-      mkdir -p $PIP_CACHE_DIR
-      pip install -r requirements.txt
+    # buildCommand: |
+    #   export PIP_CACHE_DIR=$HOME/.cache/pip
+    #   mkdir -p $PIP_CACHE_DIR
+    #   pip install -r requirements.txt
 
+    buildCommand: pip install -r requirements.txt
     startCommand: python bot.py
-    # Make sure PORT (5000 or $PORT) is set in your code for aiohttp
