@@ -1,76 +1,76 @@
 # bot.py
-import os
-import signal
-import asyncio
-
+import os, asyncio, logging
 import discord
 from discord.ext import commands
 from aiohttp import web
-
 from py.log_config import logger
+
+# Slash-Commands registrieren …
 from commands.show_table    import setup as setup_show
 from commands.update_table  import setup as setup_update
 from commands.manage_row    import setup as setup_row
 from commands.manage_editor import setup as setup_editor
 from commands.ping          import setup as setup_ping
 
-# ─── Bot Setup ──────────────────────────────────────────────────────────────
+logger.info("✨ Starting Discord-Bot…")
 intents = discord.Intents.default()
-bot     = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents)
 
-def register_commands():
-    setup_show(bot)
-    setup_update(bot)
-    setup_row(bot)
-    setup_editor(bot)
-    setup_ping(bot)
-
-register_commands()
+# Commands einbinden
+for setup in (setup_show, setup_update, setup_row, setup_editor, setup_ping):
+    setup(bot)
 
 @bot.event
 async def on_ready():
     await bot.tree.sync()
     logger.info(f"✅ Bot ready: {bot.user} ({bot.user.id})")
 
-# ─── HTTP Health-Server Setup ─────────────────────────────────────────────────
-_health_app   = web.Application()
-_health_app.add_routes([web.get("/", lambda req: web.Response(text="OK", status=200))])
-_runner       = web.AppRunner(_health_app)
-_site         = None
+# Health-Check endpoint
+async def handle_health(request):
+    return web.Response(text="OK", status=200)
 
-async def start_webserver():
-    global _site
-    await _runner.setup()
-    port = int(os.getenv("PORT", 5000))
-    _site = web.TCPSite(_runner, "0.0.0.0", port)
-    await _site.start()
-    logger.info(f"🌐 Health-Server läuft auf Port {port}")
 
-async def shutdown_webserver():
-    logger.info("🛑 Shutting down health server…")
-    if _site:
-        await _site.stop()
-    await _runner.cleanup()
+async def start_web(runner, port):
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await runner.setup()
+    await site.start()
+    logger.info(f"🌐 Health-Endpoint running on port {port}")
 
-# ─── Graceful Shutdown ───────────────────────────────────────────────────────
-async def shutdown(signal_name):
-    logger.info(f"Received {signal_name}, shutting down…")
-    await shutdown_webserver()
-    await bot.close()
-    asyncio.get_event_loop().stop()
 
-# ─── Main: Web + Bot parallel ────────────────────────────────────────────────
+async def shutdown_web(runner):
+    logger.info("🌐 Shutting down health-server…")
+    await runner.cleanup()
+
+
 async def main():
-    # Register OS-Signals
-    loop = asyncio.get_running_loop()
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, lambda s=sig: asyncio.create_task(shutdown(s.name)))
-    # Start HTTP & Bot
-    await start_webserver()
-    await bot.start(os.environ["DIS_TOKEN"])
+    # 1) HTTP-App und Runner anlegen
+    app = web.Application()
+    app.router.add_get("/", handle_health)
+    runner = web.AppRunner(app)
+
+    # 2) parallel starten
+    web_task = asyncio.create_task(start_web(runner, int(os.getenv("PORT", 5000))))
+    bot_task = asyncio.create_task(bot.start(os.environ["DIS_TOKEN"]))
+
+    # 3) warten bis der Bot stoppt (z.B. KeyboardInterrupt)
+    done, pending = await asyncio.wait(
+        [bot_task],
+        return_when=asyncio.FIRST_COMPLETED
+    )
+
+    # 4) wenn BotTask fertig, sauber HTTP herunterfahren
+    await shutdown_web(runner)
+
+    # 5) ggf. den Web-Task abbrechen
+    web_task.cancel()
+    try:
+        await web_task
+    except asyncio.CancelledError:
+        pass
+
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("KeyboardInterrupt, exiting…")
+        logger.info("✋ Shutdown requested, exiting…")
