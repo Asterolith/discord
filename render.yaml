@@ -24,5 +24,10 @@ services:
       mkdir -p $PIP_CACHE_DIR
       pip install -r requirements.txt
 
-    startCommand: uvicorn bot:app --host 0.0.0.0 --port $PORT --workers 1
+    startCommand: >
+      gunicorn bot:app
+        --bind 0.0.0.0:$PORT
+        --workers 1
+        --worker-class uvicorn.workers.UvicornWorker
+        --timeout 120
 

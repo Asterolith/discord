@@ -44,7 +44,7 @@ async def shutdown_web(runner):
 
 async def main():
     # 1) HTTP-App und Runner anlegen
-    app = web.Application()
+    app = web.Application()              # or FastAPI(), if you switch frameworks
     app.router.add_get("/", handle_health)
     runner = web.AppRunner(app)
 
