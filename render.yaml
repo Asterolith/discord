@@ -20,4 +20,5 @@ services:
       mkdir -p $PIP_CACHE_DIR
       pip install -r requirements.txt
 
-    startCommand: gunicorn web:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120
+    startCommand: python bot.py
+    # Make sure PORT (5000 or $PORT) is set in your code for aiohttp

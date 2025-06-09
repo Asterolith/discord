@@ -1,8 +1,9 @@
 # bot.py
-import os
-import logging
+
+import os, asyncio
 import discord
 from discord.ext import commands
+from aiohttp import web
 from py.log_config import logger
 
 # Slash-Commands registrieren …
@@ -25,9 +26,20 @@ async def on_ready():
     await bot.tree.sync()
     logger.info(f"✅ Bot ready: {bot.user} ({bot.user.id})")
 
+async def handle_health(request):
+    return web.Response(text="OK", status=200)
 
-bot.run(os.environ["DIS_TOKEN"])
+async def start_web():
+    app = web.Application()
+    app.add_routes([web.get("/", handle_health)])
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", int(os.getenv("PORT", 5000)))
+    await site.start()
+    logger.info("🌐 Health server running")
 
-logger.info("✨ Discord-Bot stopped.")
+async def main():
+    await asyncio.gather(start_web(), bot.start(os.environ["DIS_TOKEN"]))
 
-# EOF
+if __name__ == "__main__":
+    asyncio.run(main())
