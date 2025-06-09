@@ -8,14 +8,18 @@ from py.log_config import logger
 
 # Slash-Commands importieren …
 from commands.show_table    import setup as setup_show
-# …
+from commands.ping          import setup as setup_ping
+from commands.update_table  import setup as setup_update
+from commands.manage_row    import setup as setup_manage_row
+from commands.manage_editor import setup as setup_manage_editor
 
 logger.info("✨ Starting Discord Bot…")
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+
 # Befehle registrieren
-for setup in (setup_show, setup_update, setup_row, setup_editor, setup_ping):
+for setup in (setup_show, setup_ping, setup_update, setup_manage_row, setup_manage_editor):
     setup(bot)
 
 @bot.event
