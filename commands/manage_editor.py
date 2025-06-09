@@ -107,10 +107,10 @@ async def add_editor(interaction: Interaction, member: Member):
 
 # ─── remove_editor ───────────────────────────────────────────────────────────────
 @app_commands.command(
-    name="remove_editor",
+    name="delete_editor",
     description="Revoke editor rights (admin only)"
 )
-async def remove_editor(interaction: Interaction, member: Member):
+async def delete_editor(interaction: Interaction, member: Member):
     # 1) Authorization
     user = interaction.user
     if not is_admin(user):
@@ -152,5 +152,5 @@ async def remove_editor(interaction: Interaction, member: Member):
 
 # ─── Registration ────────────────────────────────────────────────────────────────
 def setup(bot: commands.Bot):
-    for cmd in (view_editors, add_editor, remove_editor):
+    for cmd in (view_editors, add_editor, delete_editor):
         bot.tree.add_command(cmd)

@@ -1,7 +1,9 @@
 # web.py:  tiny Flask health endpoint + starts the bot
 
 import os
+import time
 import threading
+
 from flask import Flask
 from bot import bot
 from py.log_config import logger
@@ -11,7 +13,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return "Bot is running!", 200
+    return "BOT is running!", 200
 
 # # 1) A tiny WSGI filter that catches HEAD/GET on “/” and responds directly, bypassing Flask entirely.
 # def health_check(environ, start_response):
@@ -34,12 +36,35 @@ def index():
 #     return "BOT is alive", 200
 
 
+def run_bot_w_backoff():
+    token = os.environ.get("DIS_TOKEN")
+    if not token:
+        logger.error("DIS_TOKEN missing - bot not started")
+        return
+
+    # initiate waiting time
+    backoff = 5
+    max_backoff = 200
+
+    while True:
+        try:
+            logger.info(f"🤖 Start Bot (reconnect=False), Backoff actual: {backoff}s")
+            bot.run(token, reconnect=False)
+            #_bot.run() blocks until the bot is ready
+            logger.info("⚙️ Bot.run() ended")
+            break
+        except Exception as e:
+            logger.error(f"❌ Bot failed: {e}", exc_info=True)
+            logger.info(f"⏳ Retrying in {backoff}s")
+            time.sleep(backoff)
+            #_exponential backoff
+            backoff = min(backoff * 2, max_backoff)
+            continue
+
+
 if __name__ == "__main__":
     # Start the bot in a background thread
-    threading.Thread(
-        target=lambda: bot.run(os.environ["DIS_TOKEN"]),
-        daemon=True
-    ).start()
+    threading.Thread(target=run_bot_w_backoff, daemon=True).start()
 
     logger.info("🌐 Flask web server starting…")
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
