@@ -49,28 +49,29 @@ async def start_health():
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
     logger.info(f"🌐 Health server running on port {port}")
-    await asyncio.Event().wait()  # Keeps the health server running forever
+    # await asyncio.Event().wait()  # Keeps the health server running forever
 
 
-# — Retryable bot starter with backoff —
 async def main():
-    async def run_bot():
-        for attempt in range(5):
-            try:
-                await bot.start(os.environ["DIS_TOKEN"])
-                break
-            except discord.HTTPException as e:
-                if e.status == 429:
-                    wait = 2 ** attempt
-                    logger.warning(f"Rate limited. Retrying in {wait}s...")
-                    await asyncio.sleep(wait)
-                else:
-                    raise
+    health_task = asyncio.create_task(start_health())
 
-    await asyncio.gather(
-        start_health(),
-        run_bot()
-    )
+    for attempt in range(5):
+        try:
+            await bot.start(os.environ["DIS_TOKEN"])
+            break  # wenn Start erfolgreich, kein Retry
+        except discord.HTTPException as e:
+            if e.status == 429:
+                wait = 2 ** attempt
+                logger.warning(f"Rate limited. Retrying in {wait}s...")
+                await asyncio.sleep(wait)
+            else:
+                raise
+        finally:
+            # Wichtig: Aufräumen, sonst kommt das "Unclosed client session"-Warning
+            if bot.is_closed():
+                await bot.close()
+
+    await health_task  # wartet auf Health-Server (quasi ewig)
 
 
 if __name__ == "__main__":
