@@ -1,4 +1,3 @@
-# py/logflare_handler.py
 import os, json, threading, logging, requests
 from datetime import datetime
 from logging import Handler, LogRecord
@@ -11,6 +10,7 @@ class LogflareHandler(Handler):
     """
     def __init__(self):
         super().__init__()
+        self.setFormatter(logging.Formatter())  # sorgt für formatException()
         self.api_key   = os.getenv("LOGFLARE_API_KEY")
         self.source_id = os.getenv("LOGFLARE_SOURCE_ID")
         if not self.api_key or not self.source_id:
@@ -25,7 +25,6 @@ class LogflareHandler(Handler):
             # Startet einen kurzen Thread pro Log
             threading.Thread(target=self._post, args=(payload,), daemon=True).start()
         except Exception:
-            # niemals crashen lassen
             logging.getLogger(__name__).warning("LogflareHandler.emit() Fehler", exc_info=True)
 
     def format_payload(self, record: LogRecord) -> dict:
@@ -42,7 +41,7 @@ class LogflareHandler(Handler):
             }
         }
         if record.exc_info:
-            base["meta"]["exc_info"] = self.formatException(record.exc_info)
+            base["meta"]["exc_info"] = self.formatter.formatException(record.exc_info)
         return base
 
     def _post(self, payload: dict):

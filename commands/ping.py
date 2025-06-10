@@ -1,5 +1,3 @@
-# commands/ping.py
-
 import discord
 from discord import app_commands, Interaction, errors
 from discord.ext import commands
@@ -9,15 +7,17 @@ from py.log_config import logger
     name="ping",
     description="Check bot latency"
 )
+@app_commands.checks.cooldown(rate=1, per=5.0)
 async def ping(interaction: Interaction):
     """Replies with round-trip latency in milliseconds."""
     latency_ms = round(interaction.client.latency * 1000)
 
-    # No need to defer here—this is a quick response.
     try:
         await interaction.response.send_message(f"Pong! 🏓 {latency_ms}ms")
+    except discord.HTTPException as http_exc:
+        # HTTP 429 o. ä.
+        logger.warning("HTTPException beim ping: %s", http_exc, exc_info=True)
     except errors.InteractionResponded:
-        # If we've somehow already responded, fall back to followup
         try:
             await interaction.followup.send(f"Pong! 🏓 {latency_ms}ms")
         except Exception as exc:

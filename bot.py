@@ -40,6 +40,7 @@ async def start_health():
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
     logger.info(f"🌐 Health server running on port {port}")
+    await runner.cleanup()
 
 async def main():
     # Health + Bot parallel starten, aber nur EIN Bot-Start
