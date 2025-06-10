@@ -3,10 +3,9 @@ import os, asyncio, logging
 import discord
 from discord.ext import commands
 from aiohttp import web
-# dein Log-Setup
-from py.log_config import logger
 
-# Slash-Commands importieren …
+from py.log_config import logger
+#_slash command-setup functions:
 from commands.show_table    import setup as setup_show
 from commands.ping          import setup as setup_ping
 from commands.update_table  import setup as setup_update
@@ -14,22 +13,32 @@ from commands.manage_row    import setup as setup_manage_row
 from commands.manage_editor import setup as setup_manage_editor
 
 logger.info("✨ Starting Discord Bot…")
+
 intents = discord.Intents.default()
+intents.message_content = True  # if slash commands silently fail
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+# Register all slash commands once
+for setup_func in (
+    setup_show,
+    setup_ping,
+    setup_update,
+    setup_manage_row,
+    setup_manage_editor,
+):
+    setup_func(bot)
 
-# Befehle registrieren
-for setup in (setup_show, setup_ping, setup_update, setup_manage_row, setup_manage_editor):
-    setup(bot)
 
 @bot.event
 async def on_ready():
     await bot.tree.sync()
     logger.info(f"✅ Bot ready: {bot.user} ({bot.user.id})")
 
-# Health-Endpoint
-async def handle_health(request):
+
+# — Health endpoint (for UptimeRobot, etc.) —
+async def handle_health(request: web.Request) -> web.Response:
     return web.Response(text="OK", status=200)
+
 
 async def start_health():
     app = web.Application()
@@ -40,14 +49,29 @@ async def start_health():
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
     logger.info(f"🌐 Health server running on port {port}")
-    await runner.cleanup()
+    await asyncio.Event().wait()  # Keeps the health server running forever
 
+
+# — Retryable bot starter with backoff —
 async def main():
-    # Health + Bot parallel starten, aber nur EIN Bot-Start
+    async def run_bot():
+        for attempt in range(5):
+            try:
+                await bot.start(os.environ["DIS_TOKEN"])
+                break
+            except discord.HTTPException as e:
+                if e.status == 429:
+                    wait = 2 ** attempt
+                    logger.warning(f"Rate limited. Retrying in {wait}s...")
+                    await asyncio.sleep(wait)
+                else:
+                    raise
+
     await asyncio.gather(
         start_health(),
-        bot.start(os.environ["DIS_TOKEN"])
+        run_bot()
     )
+
 
 if __name__ == "__main__":
     asyncio.run(main())

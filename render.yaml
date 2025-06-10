@@ -1,8 +1,13 @@
 #_render.yaml
+"""
+Why “worker”? not serving a web app—
+your bot just needs to stay alive and optionally answer health checks. 
+Render won’t try to probe ports, and you won’t consume free-tier web minutes.
+"""
 services:
-  - type: web
+  - type: worker
     name: discord-bot
-    envVars:
+    env:
       - key: DIS_TOKEN
       - key: SUPABASE_URL
       - key: SUPABASE_ANON_KEY
@@ -10,6 +15,8 @@ services:
       - key: SUPABASE_JWT_SECRET
       - key: LOGFLARE_API_KEY
       - key: LOGFLARE_SOURCE_ID
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
 
     # Enable and persist pip cache across builds:
     # cacheDirectories:
@@ -19,6 +26,3 @@ services:
     #   export PIP_CACHE_DIR=$HOME/.cache/pip
     #   mkdir -p $PIP_CACHE_DIR
     #   pip install -r requirements.txt
-
-    buildCommand: pip install -r requirements.txt
-    startCommand: python bot.py
