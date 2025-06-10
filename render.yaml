@@ -18,6 +18,7 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: python bot.py
 
+
     # Enable and persist pip cache across builds:
     # cacheDirectories:
     #   - $HOME/.cache/pip
